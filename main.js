@@ -90,13 +90,16 @@ function api(methods, params) {
         let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
         if (res_price['error'].length > 0) console.error(res_price['error'])
 
+
         for (let i = 0; i < currencies.length; i++) {
             Object.entries(res_price['result']).forEach(([key, value]) => {
                 if (currencies[i].key === key) {
                     currencies[i].price = value.a[0]
                 }
             });
+        }
 
+        for (let i = 0; i < currencies.length; i++) {
             let miser = mise / currencies[i].price < currencies[i].ordermin ?
                 currencies[i].ordermin * currencies[i].price : mise
 
