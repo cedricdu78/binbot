@@ -72,7 +72,6 @@ function api(methods, params) {
             })
         }
 
-        console.log(++step)
         res = await api(methods.public.AssetPairs)
         if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
@@ -90,8 +89,6 @@ function api(methods, params) {
                 list_names += value.altname + ','
             }
         })
-
-        console.log(currencies)
 
         let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
         if (res_price['error'].length > 0) console.error(res_price['error'])
