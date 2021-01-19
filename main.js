@@ -53,11 +53,11 @@ function api(methods, params) {
         let list_names = ('')
 
         let res = await api(methods.private.Balance)
-        if (res['error'].length > 0) console.log(res['error'])
+        if (res['error'].length > 0) console.error(res['error'])
         let balance = res['result']['ZEUR']
 
         res = await api(methods.private.OpenOrders)
-        if (res['error'].length > 0) console.log(res['error'])
+        if (res['error'].length > 0) console.error(res['error'])
         if (res['result'].open !== null) {
             Object.entries(res['result'].open).forEach(([, value]) => {
                 currencies_open.push(value)
@@ -65,7 +65,7 @@ function api(methods, params) {
         }
 
         res = await api(methods.public.AssetPairs)
-        if (res['error'].length > 0) console.log(res['error'])
+        if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
             if (value.quote === 'ZEUR') {
                 const _currency = Object.create(null);
@@ -82,13 +82,14 @@ function api(methods, params) {
             }
         })
 
-        res = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
-        if (res['error'].length > 0) console.log(res['error'])
+        let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
+        if (res_price['error'].length > 0) console.error(res_price['error'])
 
         for (let i = 0; i < currencies.length; i++) {
-            Object.entries(res['result']).forEach(([key, value]) => {
-                if (currencies[i].key === key)
+            Object.entries(res_price['result']).forEach(([key, value]) => {
+                if (currencies[i].key === key) {
                     currencies[i].price = value.a[0]
+                }
             });
 
             let miser = (mise / currencies[i].price < currencies[i].ordermin ?
@@ -121,7 +122,7 @@ function api(methods, params) {
                 new Promise(res => setTimeout(res, 100));
 
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
-                if (res['error'].length > 0) console.log(res['error'])
+                if (res['error'].length > 0) console.error(res['error'])
 
                 let moy = ([])
                 Object.entries(res['result'][currencies[i].key]).forEach(([, value]) => {
@@ -142,7 +143,7 @@ function api(methods, params) {
                         'close[ordertype]': 'take-profit',
                         'close[price]': close_price
                     })
-                    if (res['error'].length > 0) console.log(res['error'])
+                    if (res['error'].length > 0) console.error(res['error'])
 
                     balance -= miser
 
