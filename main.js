@@ -39,18 +39,18 @@ function api(methods, params) {
 
 (async () => {
 
-    const interval = (15)// interval value data historic (one week)
-    const a_median = (0)// after average week - 0 %
-    const b_median = (20)// before average week - 20 %
-    const profit = (10)// mise + 10 %
-    const mise = (25)
+    const interval = 15// interval value data historic (one week)
+    const a_median = 0// after average week - 0 %
+    const b_median = 20// before average week - 20 %
+    const profit = 10// mise + 10 %
+    const mise = 25
 
     while (1) {
 
-        let currencies = ([])
-        let currencies_open = ([])
-        let orders = ([])
-        let list_names = ('')
+        let currencies = []
+        let currencies_open = []
+        let orders = []
+        let list_names = ''
 
         let res = await api(methods.private.Balance)
         if (res['error'].length > 0) console.error(res['error'])
@@ -92,8 +92,8 @@ function api(methods, params) {
                 }
             });
 
-            let miser = (mise / currencies[i].price < currencies[i].ordermin ?
-                currencies[i].ordermin * currencies[i].price : mise)
+            let miser = mise / currencies[i].price < currencies[i].ordermin ?
+                currencies[i].ordermin * currencies[i].price : mise
 
             Object.entries(currencies_open).forEach(([, value]) => {
                 if (value['descr'].pair === currencies[i].altname) {
@@ -124,7 +124,7 @@ function api(methods, params) {
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
                 if (res['error'].length > 0) console.error(res['error'])
 
-                let moy = ([])
+                let moy = []
                 Object.entries(res['result'][currencies[i].key]).forEach(([, value]) => {
                     moy.push(value[1])
                 })
@@ -134,7 +134,7 @@ function api(methods, params) {
                     moy * (100 + a_median) / 100 >= currencies[i].price &&
                     currencies[i].price > 0) {
 
-                    let volume = (miser / currencies[i].price)
+                    let volume = miser / currencies[i].price
                     let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
                     res = await api(methods.private.AddOrder, {
