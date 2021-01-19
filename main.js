@@ -51,11 +51,14 @@ function api(methods, params) {
         let currencies_open = []
         let orders = []
         let list_names = ''
+        let step = 0
 
+        step += 1
         let res = await api(methods.private.Balance)
         if (res['error'].length > 0) console.error(res['error'])
         let balance = res['result']['ZEUR']
 
+        step += 1
         res = await api(methods.private.OpenOrders)
         if (res['error'].length > 0) console.error(res['error'])
         if (res['result'].open !== null) {
@@ -64,6 +67,7 @@ function api(methods, params) {
             })
         }
 
+        step += 1
         res = await api(methods.public.AssetPairs)
         if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
@@ -82,8 +86,10 @@ function api(methods, params) {
             }
         })
 
+        step += 1
         let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
         if (res_price['error'].length > 0) console.error(res_price['error'])
+
 
         for (let i = 0; i < currencies.length; i++) {
             Object.entries(res_price['result']).forEach(([key, value]) => {
@@ -91,7 +97,9 @@ function api(methods, params) {
                     currencies[i].price = value.a[0]
                 }
             });
+        }
 
+        for (let i = 0; i < currencies.length; i++) {
             let miser = mise / currencies[i].price < currencies[i].ordermin ?
                 currencies[i].ordermin * currencies[i].price : mise
 
@@ -106,12 +114,13 @@ function api(methods, params) {
                     order.mise = Number(Number(miser).toFixed(2))
                     order.gain_now = Number((currencies[i].price * value['vol']).toFixed(2))
                     order.gain = Number((value['descr'].price * value['vol']).toFixed(2))
-                    let date_ob = new Date(value['opentm'] * 1000)
-                    order.date = date_ob.getFullYear() + '-' +
-                        ('0' + (date_ob.getMonth() + 1)).slice(-2) + '-' +
-                        ('0' + date_ob.getDate()).slice(-2) + ' ' +
-                        date_ob.getHours() + ':' + date_ob.getMinutes() + ':' +
-                        date_ob.getSeconds()
+                    let date = new Date(value['opentm'] * 1000)
+                    order.date = date.getFullYear() + '-' +
+                        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+                        ('0' + date.getDate()).slice(-2) + ' ' +
+                        ('0' + date.getHours()).slice(-2) + ':' +
+                        ('0' + date.getMinutes()).slice(-2) + ':' +
+                        ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
 
                     currencies = currencies.filter(item => item !== currencies[i])
@@ -121,6 +130,7 @@ function api(methods, params) {
             if (balance >= miser) {
                 new Promise(res => setTimeout(res, 100));
 
+                step += 1
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
                 if (res['error'].length > 0) console.error(res['error'])
 
@@ -137,6 +147,7 @@ function api(methods, params) {
                     let volume = miser / currencies[i].price
                     let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
+                    step += 1
                     res = await api(methods.private.AddOrder, {
                         'pair': currencies[i].key, 'type': 'buy',
                         'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
@@ -167,14 +178,20 @@ function api(methods, params) {
                     order.mise = miser
                     order.gain_now = plus_value
                     order.gain = plus_value
-                    order.date = new Date()
+                    let date = new Date()
+                    order.date = date.getUTCFullYear() + '-' +
+                        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+                        ('0' + date.getDate()).slice(-2) + ' ' +
+                        ('0' + date.getHours()).slice(-2) + ':' +
+                        ('0' + date.getMinutes()).slice(-2) + ':' +
+                        ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
                 }
             }
         }
 
         console.table(orders)
-        console.table({'balance': Number(balance)})
+        console.table({'balance': Number(balance), 'step': step})
 
         await new Promise(res => setTimeout(res, 30000));
     }
