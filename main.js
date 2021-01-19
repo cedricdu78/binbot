@@ -132,7 +132,7 @@ function api(methods, params) {
 
                 console.log(++step)
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
-                if (res['error'].length > 0) console.error(res['error'])
+                if (res['error'].length > 0) console.log(res['error'])
 
                 let moy = []
                 Object.entries(res['result'][currencies[i].key]).forEach(([, value]) => {
