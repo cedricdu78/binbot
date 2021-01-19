@@ -45,6 +45,13 @@ function api(methods, params) {
     const profit = 10// mise + 10 %
     const mise = 25
 
+    const currencies_blacklist = [
+        "USDCEUR",
+        "USDTEUR",
+        "DAIEUR",
+        "TBTCEUR"
+    ]
+
     while (1) {
 
         let currencies = []
@@ -53,12 +60,10 @@ function api(methods, params) {
         let list_names = ''
         let step = 0
 
-        console.log(++step)
         let res = await api(methods.private.Balance)
         if (res['error'].length > 0) console.error(res['error'])
         let balance = res['result']['ZEUR']
 
-        console.log(++step)
         res = await api(methods.private.OpenOrders)
         if (res['error'].length > 0) console.error(res['error'])
         if (res['result'].open !== null) {
@@ -71,7 +76,7 @@ function api(methods, params) {
         res = await api(methods.public.AssetPairs)
         if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
-            if (value.quote === 'ZEUR') {
+            if (value.quote === 'ZEUR' && !currencies_blacklist.indexOf(value.altname) > -1) {
                 const _currency = Object.create(null);
                 _currency.key = key
                 _currency.altname = value.altname
@@ -86,10 +91,10 @@ function api(methods, params) {
             }
         })
 
-        console.log(++step)
+        console.log(currencies)
+
         let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
         if (res_price['error'].length > 0) console.error(res_price['error'])
-
 
         for (let i = 0; i < currencies.length; i++) {
             Object.entries(res_price['result']).forEach(([key, value]) => {
