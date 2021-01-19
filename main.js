@@ -58,7 +58,6 @@ function api(methods, params) {
         let currencies_open = []
         let orders = []
         let list_names = ''
-        let step = 0
 
         let res = await api(methods.private.Balance)
         if (res['error'].length > 0) console.error(res['error'])
@@ -113,7 +112,7 @@ function api(methods, params) {
                     order.start = Number((value['descr'].price - (value['descr'].price * profit / 100)).toFixed(2))
                     order.now = Number(Number((currencies[i].price)).toFixed(2))
                     order.end = Number(value['descr'].price)
-                    order.mise = Number(Number(miser).toFixed(2))
+                    order.mise = Number(Number(order.start * order.volume).toFixed(2))
                     order.gain_now = Number((currencies[i].price * value['vol']).toFixed(2))
                     order.gain = Number((value['descr'].price * value['vol']).toFixed(2))
                     let date = new Date(value['opentm'] * 1000)
