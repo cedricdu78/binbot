@@ -106,12 +106,13 @@ function api(methods, params) {
                     order.mise = Number(Number(miser).toFixed(2))
                     order.gain_now = Number((currencies[i].price * value['vol']).toFixed(2))
                     order.gain = Number((value['descr'].price * value['vol']).toFixed(2))
-                    let date_ob = new Date(value['opentm'] * 1000)
-                    order.date = date_ob.getFullYear() + '-' +
-                        ('0' + (date_ob.getMonth() + 1)).slice(-2) + '-' +
-                        ('0' + date_ob.getDate()).slice(-2) + ' ' +
-                        date_ob.getHours() + ':' + date_ob.getMinutes() + ':' +
-                        date_ob.getSeconds()
+                    let date = new Date(value['opentm'] * 1000)
+                    order.date = date.getFullYear() + '-' +
+                        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+                        ('0' + date.getDate()).slice(-2) + ' ' +
+                        ('0' + date.getHours()).slice(-2) + ':' +
+                        ('0' + date.getMinutes()).slice(-2) + ':' +
+                        ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
 
                     currencies = currencies.filter(item => item !== currencies[i])
@@ -167,7 +168,13 @@ function api(methods, params) {
                     order.mise = miser
                     order.gain_now = plus_value
                     order.gain = plus_value
-                    order.date = new Date()
+                    let date = new Date()
+                    order.date = date.getUTCFullYear() + '-' +
+                        ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
+                        ('0' + date.getDate()).slice(-2) + ' ' +
+                        ('0' + date.getHours()).slice(-2) + ':' +
+                        ('0' + date.getMinutes()).slice(-2) + ':' +
+                        ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
                 }
             }
