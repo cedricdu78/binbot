@@ -51,11 +51,14 @@ function api(methods, params) {
         let currencies_open = []
         let orders = []
         let list_names = ''
+        let step = 0
 
+        step += 1
         let res = await api(methods.private.Balance)
         if (res['error'].length > 0) console.error(res['error'])
         let balance = res['result']['ZEUR']
 
+        step += 1
         res = await api(methods.private.OpenOrders)
         if (res['error'].length > 0) console.error(res['error'])
         if (res['result'].open !== null) {
@@ -64,6 +67,7 @@ function api(methods, params) {
             })
         }
 
+        step += 1
         res = await api(methods.public.AssetPairs)
         if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
@@ -82,6 +86,7 @@ function api(methods, params) {
             }
         })
 
+        step += 1
         let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
         if (res_price['error'].length > 0) console.error(res_price['error'])
 
@@ -122,6 +127,7 @@ function api(methods, params) {
             if (balance >= miser) {
                 new Promise(res => setTimeout(res, 100));
 
+                step += 1
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
                 if (res['error'].length > 0) console.error(res['error'])
 
@@ -138,6 +144,7 @@ function api(methods, params) {
                     let volume = miser / currencies[i].price
                     let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
+                    step += 1
                     res = await api(methods.private.AddOrder, {
                         'pair': currencies[i].key, 'type': 'buy',
                         'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
@@ -181,7 +188,7 @@ function api(methods, params) {
         }
 
         console.table(orders)
-        console.table({'balance': Number(balance)})
+        console.table({'balance': Number(balance), 'step': step})
 
         await new Promise(res => setTimeout(res, 30000));
     }
