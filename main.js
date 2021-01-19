@@ -4,23 +4,23 @@ const kraken       = new KrakenClient(secrets.key(), secrets.secret());
 
 const methods = {
     public : {
-        Time  : "Time", Assets : "Assets",
-        AssetPairs : "AssetPairs", Ticker : "Ticker",
-        Depth : "Depth", Trades : "Trades",
-        Spread : "Spread", OHLC : "OHLC"
+        Time  : 'Time', Assets : 'Assets',
+        AssetPairs : 'AssetPairs', Ticker : 'Ticker',
+        Depth : 'Depth', Trades : 'Trades',
+        Spread : 'Spread', OHLC : 'OHLC'
     },
     private : {
-        Balance: "Balance", TradeBalance: "TradeBalance",
-        OpenOrders: "OpenOrders", ClosedOrders: "ClosedOrders",
-        QueryOrders: "QueryOrders", TradesHistory: "TradesHistory",
-        QueryTrades: "QueryTrades", OpenPositions: "OpenPositions",
-        Ledgers: "Ledgers", QueryLedgers: "QueryLedgers",
-        TradeVolume: "TradeVolume", AddOrder: "AddOrder",
-        CancelOrder: "CancelOrder", DepositMethods: "DepositMethods",
-        DepositAddresses: "DepositAddresses", DepositStatus: "DepositStatus",
-        WithdrawInfo: "WithdrawInfo", Withdraw: "Withdraw",
-        WithdrawStatus: "WithdrawStatus", WithdrawCancel: "WithdrawCancel",
-        GetWebSocketsToken: "GetWebSocketsToken"
+        Balance: 'Balance', TradeBalance: 'TradeBalance',
+        OpenOrders: 'OpenOrders', ClosedOrders: 'ClosedOrders',
+        QueryOrders: 'QueryOrders', TradesHistory: 'TradesHistory',
+        QueryTrades: 'QueryTrades', OpenPositions: 'OpenPositions',
+        Ledgers: 'Ledgers', QueryLedgers: 'QueryLedgers',
+        TradeVolume: 'TradeVolume', AddOrder: 'AddOrder',
+        CancelOrder: 'CancelOrder', DepositMethods: 'DepositMethods',
+        DepositAddresses: 'DepositAddresses', DepositStatus: 'DepositStatus',
+        WithdrawInfo: 'WithdrawInfo', Withdraw: 'Withdraw',
+        WithdrawStatus: 'WithdrawStatus', WithdrawCancel: 'WithdrawCancel',
+        GetWebSocketsToken: 'GetWebSocketsToken'
     }
 };
 
@@ -31,12 +31,6 @@ function average(a) {
         c += Number(a[i]);
     }
     return c/b;
-}
-
-function exit(err) {
-    process.on('exit', function () {
-        return console.error(err);
-    });
 }
 
 function api(methods, params) {
@@ -56,24 +50,24 @@ function api(methods, params) {
         let currencies = ([])
         let currencies_open = ([])
         let orders = ([])
-        let list_names = ("")
+        let list_names = ('')
 
         let res = await api(methods.private.Balance)
-        if (res["error"] !== null) exit(res["error"])
-        let balance = res["result"]["ZEUR"]
+        if (res['error'].length > 0) console.error(res['error'])
+        let balance = res['result']['ZEUR']
 
         res = await api(methods.private.OpenOrders)
-        if (res["error"] !== null) exit(res["error"])
-        if (res["result"].open !== null) {
-            Object.entries(res["result"].open).forEach(([, value]) => {
+        if (res['error'].length > 0) console.error(res['error'])
+        if (res['result'].open !== null) {
+            Object.entries(res['result'].open).forEach(([, value]) => {
                 currencies_open.push(value)
             })
         }
 
         res = await api(methods.public.AssetPairs)
-        if (res["error"] !== null) exit(res["error"])
-        Object.entries(res["result"]).forEach(([key, value]) => {
-            if (value.quote === "ZEUR") {
+        if (res['error'].length > 0) console.error(res['error'])
+        Object.entries(res['result']).forEach(([key, value]) => {
+            if (value.quote === 'ZEUR') {
                 const _currency = Object.create(null);
                 _currency.key = key
                 _currency.altname = value.altname
@@ -84,38 +78,39 @@ function api(methods, params) {
                 _currency.price = 0
                 currencies.push(_currency)
 
-                list_names += value.altname + ","
+                list_names += value.altname + ','
             }
         })
 
-        res = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
-        if (res["error"] !== null) exit(res["error"])
+        let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
+        if (res_price['error'].length > 0) console.error(res_price['error'])
 
         for (let i = 0; i < currencies.length; i++) {
-            Object.entries(res["result"]).forEach(([key, value]) => {
-                if (currencies[i].key === key)
+            Object.entries(res_price['result']).forEach(([key, value]) => {
+                if (currencies[i].key === key) {
                     currencies[i].price = value.a[0]
+                }
             });
 
             let miser = (mise / currencies[i].price < currencies[i].ordermin ?
                 currencies[i].ordermin * currencies[i].price : mise)
 
             Object.entries(currencies_open).forEach(([, value]) => {
-                if (value["descr"].pair === currencies[i].altname) {
+                if (value['descr'].pair === currencies[i].altname) {
                     const order = Object.create(null);
-                    order.currency = value["descr"].pair
-                    order.volume = Number(value["vol"])
-                    order.start = Number((value["descr"].price - (value["descr"].price * profit / 100)).toFixed(2))
+                    order.currency = value['descr'].pair
+                    order.volume = Number(value['vol'])
+                    order.start = Number((value['descr'].price - (value['descr'].price * profit / 100)).toFixed(2))
                     order.now = Number(Number((currencies[i].price)).toFixed(2))
-                    order.end = Number(value["descr"].price)
+                    order.end = Number(value['descr'].price)
                     order.mise = Number(Number(miser).toFixed(2))
-                    order.gain_now = Number((currencies[i].price * value["vol"]).toFixed(2))
-                    order.gain = Number((value["descr"].price * value["vol"]).toFixed(2))
-                    let date_ob = new Date(value["opentm"] * 1000)
-                    order.date = date_ob.getFullYear() + "-" +
-                        ("0" + (date_ob.getMonth() + 1)).slice(-2) + "-" +
-                        ("0" + date_ob.getDate()).slice(-2) + " " +
-                        date_ob.getHours() + ":" + date_ob.getMinutes() + ":" +
+                    order.gain_now = Number((currencies[i].price * value['vol']).toFixed(2))
+                    order.gain = Number((value['descr'].price * value['vol']).toFixed(2))
+                    let date_ob = new Date(value['opentm'] * 1000)
+                    order.date = date_ob.getFullYear() + '-' +
+                        ('0' + (date_ob.getMonth() + 1)).slice(-2) + '-' +
+                        ('0' + date_ob.getDate()).slice(-2) + ' ' +
+                        date_ob.getHours() + ':' + date_ob.getMinutes() + ':' +
                         date_ob.getSeconds()
                     orders.push(order)
 
@@ -127,10 +122,10 @@ function api(methods, params) {
                 new Promise(res => setTimeout(res, 100));
 
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
-                if (res["error"] !== null) exit(res["error"])
+                if (res['error'].length > 0) console.error(res['error'])
 
                 let moy = ([])
-                Object.entries(res["result"][currencies[i].key]).forEach(([, value]) => {
+                Object.entries(res['result'][currencies[i].key]).forEach(([, value]) => {
                     moy.push(value[1])
                 })
                 moy = average(moy)
@@ -148,7 +143,7 @@ function api(methods, params) {
                         'close[ordertype]': 'take-profit',
                         'close[price]': close_price
                     })
-                    if (res["error"] !== null) exit(res["error"])
+                    if (res['error'].length > 0) console.error(res['error'])
 
                     balance -= miser
 
@@ -179,10 +174,8 @@ function api(methods, params) {
         }
 
         console.table(orders)
-        console.table({"balance": Number(balance)})
+        console.table({'balance': Number(balance)})
 
         await new Promise(res => setTimeout(res, 30000));
-
-        process.removeAllListeners();
     }
 })();
