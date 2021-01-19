@@ -132,7 +132,6 @@ function api(methods, params) {
             if (balance >= miser) {
                 new Promise(res => setTimeout(res, 100));
 
-                console.log(++step)
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
                 if (res['error'].length > 0) console.log(res['error'])
 
@@ -149,7 +148,6 @@ function api(methods, params) {
                     let volume = miser / currencies[i].price
                     let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
-                    console.log(++step)
                     res = await api(methods.private.AddOrder, {
                         'pair': currencies[i].key, 'type': 'buy',
                         'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
