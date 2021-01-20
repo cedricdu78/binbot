@@ -74,7 +74,7 @@ function api(methods, params) {
         res = await api(methods.public.AssetPairs)
         if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
-            if (value.quote === 'ZEUR' && !currencies_blacklist.indexOf(value.altname) > -1) {
+            if (value.quote === 'ZEUR' && !(currencies_blacklist.indexOf(value.altname) > -1)) {
                 const _currency = Object.create(null);
                 _currency.key = key
                 _currency.altname = value.altname
