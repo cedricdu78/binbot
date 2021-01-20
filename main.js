@@ -68,6 +68,7 @@ function api(methods, params) {
         if (res['result'].open !== null) {
             Object.entries(res['result'].open).forEach(([, value]) => {
                 currencies_open.push(value)
+                // console.log(value)
             })
         }
 
@@ -101,11 +102,12 @@ function api(methods, params) {
         }
 
         for (let i = 0; i < currencies.length; i++) {
+            console.log(currencies.length + ' ' + i)
             let miser = mise / currencies[i].price < currencies[i].ordermin ?
                 currencies[i].ordermin * currencies[i].price : mise
 
             Object.entries(currencies_open).forEach(([, value]) => {
-                if (value['descr'].pair === currencies[i].altname) {
+                if (currencies[i] != null && value['descr'].pair === currencies[i].altname) {
                     const order = Object.create(null);
                     order.currency = value['descr'].pair
                     order.volume = Number(value['vol'])
@@ -124,10 +126,19 @@ function api(methods, params) {
                         ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
 
-                    currencies = currencies.filter(item => item !== currencies[i])
+                    currencies[i] = null
                 }
             })
+        }
 
+        Object.entries(currencies).forEach(([, value]) => {
+            if (value === null)
+                currencies = currencies.filter(item => item !== value)
+        })
+
+        for (let i = 0; i < currencies.length; i++) {
+            let miser = mise / currencies[i].price < currencies[i].ordermin ?
+                currencies[i].ordermin * currencies[i].price : mise
             if (balance >= miser) {
                 new Promise(res => setTimeout(res, 100));
 
