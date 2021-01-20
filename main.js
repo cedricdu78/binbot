@@ -101,22 +101,20 @@ function api(methods, params) {
             });
         }
 
-        for (let i = 0; i < currencies.length; i++) {
-            let miser = mise / currencies[i].price < currencies[i].ordermin ?
-                currencies[i].ordermin * currencies[i].price : mise
+        for (let i = 0; i < currencies_open.length; i++) {
 
-            Object.entries(currencies_open).forEach(([, value]) => {
-                if (currencies[i] != null && value['descr'].pair === currencies[i].altname) {
+            Object.entries(currencies).forEach(([, value]) => {
+                if (value != null && currencies_open[i]['descr'].pair === value.altname) {
                     const order = Object.create(null);
-                    order.currency = value['descr'].pair
-                    order.volume = Number(value['vol'])
-                    order.start = Number((value['descr'].price - (value['descr'].price * profit / 100)).toFixed(2))
-                    order.now = Number(Number((currencies[i].price)).toFixed(2))
-                    order.end = Number(value['descr'].price)
+                    order.currency = currencies_open[i]['descr'].pair
+                    order.volume = Number(currencies_open[i]['vol'])
+                    order.start = Number((currencies_open[i]['descr'].price - (currencies_open[i]['descr'].price * profit / 100)).toFixed(2))
+                    order.now = Number(Number((value.price)).toFixed(2))
+                    order.end = Number(currencies_open[i]['descr'].price)
                     order.mise = Number(Number(order.start * order.volume).toFixed(2))
-                    order.gain_now = Number((currencies[i].price * value['vol']).toFixed(2))
-                    order.gain = Number((value['descr'].price * value['vol']).toFixed(2))
-                    let date = new Date(value['opentm'] * 1000)
+                    order.gain_now = Number((value.price * currencies_open[i]['vol']).toFixed(2))
+                    order.gain = Number((currencies_open[i]['descr'].price * currencies_open[i]['vol']).toFixed(2))
+                    let date = new Date(currencies_open[i]['opentm'] * 1000)
                     order.date = date.getFullYear() + '-' +
                         ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
                         ('0' + date.getDate()).slice(-2) + ' ' +
@@ -125,7 +123,7 @@ function api(methods, params) {
                         ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
 
-                    currencies[i] = null
+                    value = null
                 }
             })
         }
