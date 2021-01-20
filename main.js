@@ -45,33 +45,37 @@ function api(methods, params) {
     const profit = 10// mise + 10 %
     const mise = 25
 
+    const currencies_blacklist = [
+        "USDCEUR",
+        "USDTEUR",
+        "DAIEUR",
+        "TBTCEUR"
+    ]
+
     while (1) {
 
         let currencies = []
         let currencies_open = []
         let orders = []
         let list_names = ''
-        let step = 0
 
-        step += 1
         let res = await api(methods.private.Balance)
         if (res['error'].length > 0) console.error(res['error'])
         let balance = res['result']['ZEUR']
 
-        step += 1
         res = await api(methods.private.OpenOrders)
         if (res['error'].length > 0) console.error(res['error'])
         if (res['result'].open !== null) {
             Object.entries(res['result'].open).forEach(([, value]) => {
                 currencies_open.push(value)
+                // console.log(value)
             })
         }
 
-        step += 1
         res = await api(methods.public.AssetPairs)
         if (res['error'].length > 0) console.error(res['error'])
         Object.entries(res['result']).forEach(([key, value]) => {
-            if (value.quote === 'ZEUR') {
+            if (value.quote === 'ZEUR' && !(currencies_blacklist.indexOf(value.altname) > -1)) {
                 const _currency = Object.create(null);
                 _currency.key = key
                 _currency.altname = value.altname
@@ -86,10 +90,8 @@ function api(methods, params) {
             }
         })
 
-        step += 1
         let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
         if (res_price['error'].length > 0) console.error(res_price['error'])
-
 
         for (let i = 0; i < currencies.length; i++) {
             Object.entries(res_price['result']).forEach(([key, value]) => {
@@ -99,22 +101,20 @@ function api(methods, params) {
             });
         }
 
-        for (let i = 0; i < currencies.length; i++) {
-            let miser = mise / currencies[i].price < currencies[i].ordermin ?
-                currencies[i].ordermin * currencies[i].price : mise
+        for (let i = 0; i < currencies_open.length; i++) {
 
-            Object.entries(currencies_open).forEach(([, value]) => {
-                if (value['descr'].pair === currencies[i].altname) {
+            Object.entries(currencies).forEach(([, value]) => {
+                if (value != null && currencies_open[i]['descr'].pair === value.altname) {
                     const order = Object.create(null);
-                    order.currency = value['descr'].pair
-                    order.volume = Number(value['vol'])
-                    order.start = Number((value['descr'].price - (value['descr'].price * profit / 100)).toFixed(2))
-                    order.now = Number(Number((currencies[i].price)).toFixed(2))
-                    order.end = Number(value['descr'].price)
-                    order.mise = Number(Number(miser).toFixed(2))
-                    order.gain_now = Number((currencies[i].price * value['vol']).toFixed(2))
-                    order.gain = Number((value['descr'].price * value['vol']).toFixed(2))
-                    let date = new Date(value['opentm'] * 1000)
+                    order.currency = currencies_open[i]['descr'].pair
+                    order.volume = Number(currencies_open[i]['vol'])
+                    order.start = Number((currencies_open[i]['descr'].price - (currencies_open[i]['descr'].price * profit / 100)).toFixed(2))
+                    order.now = Number(Number((value.price)).toFixed(2))
+                    order.end = Number(currencies_open[i]['descr'].price)
+                    order.mise = Number(Number(order.start * order.volume).toFixed(2))
+                    order.gain_now = Number((value.price * currencies_open[i]['vol']).toFixed(2))
+                    order.gain = Number((currencies_open[i]['descr'].price * currencies_open[i]['vol']).toFixed(2))
+                    let date = new Date(currencies_open[i]['opentm'] * 1000)
                     order.date = date.getFullYear() + '-' +
                         ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
                         ('0' + date.getDate()).slice(-2) + ' ' +
@@ -123,16 +123,24 @@ function api(methods, params) {
                         ('0' + date.getSeconds()).slice(-2)
                     orders.push(order)
 
-                    currencies = currencies.filter(item => item !== currencies[i])
+                    value = null
                 }
             })
+        }
 
+        Object.entries(currencies).forEach(([, value]) => {
+            if (value === null)
+                currencies = currencies.filter(item => item !== value)
+        })
+
+        for (let i = 0; i < currencies.length; i++) {
+            let miser = mise / currencies[i].price < currencies[i].ordermin ?
+                currencies[i].ordermin * currencies[i].price : mise
             if (balance >= miser) {
                 new Promise(res => setTimeout(res, 100));
 
-                step += 1
                 res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
-                if (res['error'].length > 0) console.error(res['error'])
+                if (res['error'].length > 0) console.log(res['error'])
 
                 let moy = []
                 Object.entries(res['result'][currencies[i].key]).forEach(([, value]) => {
@@ -147,7 +155,6 @@ function api(methods, params) {
                     let volume = miser / currencies[i].price
                     let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
-                    step += 1
                     res = await api(methods.private.AddOrder, {
                         'pair': currencies[i].key, 'type': 'buy',
                         'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
@@ -191,7 +198,7 @@ function api(methods, params) {
         }
 
         console.table(orders)
-        console.table({'balance': Number(balance), 'step': step})
+        console.table({'balance': Number(balance)})
 
         await new Promise(res => setTimeout(res, 30000));
     }
