@@ -102,7 +102,6 @@ function api(methods, params) {
         }
 
         for (let i = 0; i < currencies.length; i++) {
-            console.log(currencies.length + ' ' + i)
             let miser = mise / currencies[i].price < currencies[i].ordermin ?
                 currencies[i].ordermin * currencies[i].price : mise
 
