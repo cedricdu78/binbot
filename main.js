@@ -179,8 +179,8 @@ function api(methods, params) {
                     const order = Object.create(null);
                     order.currency = currencies[i].key
                     order.volume = volume
-                    order.start = currencies[i].price
-                    order.now = currencies[i].price
+                    order.start = Number(currencies[i].price)
+                    order.now = Number(currencies[i].price)
                     order.end = close_price
                     order.mise = miser
                     order.gain_now = plus_value
@@ -198,7 +198,7 @@ function api(methods, params) {
         }
 
         console.table(orders)
-        console.table({'balance': Number(balance)})
+        console.table({'balance': Number(Number(balance).toFixed(2))})
 
         await new Promise(res => setTimeout(res, 30000));
     }
