@@ -197,8 +197,8 @@ function api(methods, params) {
                 }
             }
 
-            console.table(orders)
-            console.table(new_orders)
+            if (orders.length > 0) console.table(orders)
+            if (new_orders.length > 0) console.table(new_orders)
             console.table({'balance': Number(Number(balance).toFixed(2))})
 
             await new Promise(res => setTimeout(res, 30000));
