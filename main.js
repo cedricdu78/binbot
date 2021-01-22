@@ -46,10 +46,12 @@ function api(methods, params) {
     const mise = 25
 
     const currencies_blacklist = [
-        "USDCEUR",
         "USDTEUR",
+        "USDCEUR",
         "DAIEUR",
-        "TBTCEUR"
+        "PAXGEUR",
+        "TBTCEUR",
+        "YFIEUR"
     ]
 
     while (1) {
@@ -130,7 +132,7 @@ function api(methods, params) {
             currencies = currencies.filter(item => item.price !== 0)
 
             Object.entries(currencies_open).forEach(([, value]) => {
-                currencies = currencies.filter(item => item.altname !== value.descr.pair)
+                currencies = currencies.filter(item => item.altname !== value["descr"].pair)
             })
 
             for (let i = 0; i < currencies.length; i++) {
