@@ -44,6 +44,7 @@ function api(methods, params) {
     const b_median = 20// before average week - 20 %
     const profit = 10// mise + 10 %
     const mise = 25
+    const keep_balance = 0
 
     const currencies_blacklist = [
         "USDTEUR",
@@ -138,7 +139,7 @@ function api(methods, params) {
             for (let i = 0; i < currencies.length; i++) {
                 let miser = mise / currencies[i].price < currencies[i].ordermin ?
                     currencies[i].ordermin * currencies[i].price : mise
-                if (balance >= miser) {
+                if (balance >= (keep_balance + miser)) {
                     new Promise(res => setTimeout(res, 100));
 
                     res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
