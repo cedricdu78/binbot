@@ -58,6 +58,7 @@ function api(methods, params) {
             let currencies = []
             let currencies_open = []
             let orders = []
+            let new_orders = []
             let list_names = ''
 
             let res = await api(methods.private.Balance)
@@ -191,12 +192,13 @@ function api(methods, params) {
                             ('0' + date.getHours()).slice(-2) + ':' +
                             ('0' + date.getMinutes()).slice(-2) + ':' +
                             ('0' + date.getSeconds()).slice(-2)
-                        orders.push(order)
+                        new_orders.push(order)
                     }
                 }
             }
 
             console.table(orders)
+            console.table(new_orders)
             console.table({'balance': Number(Number(balance).toFixed(2))})
 
             await new Promise(res => setTimeout(res, 30000));
