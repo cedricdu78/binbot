@@ -166,15 +166,15 @@ function api(methods, params) {
                         balance -= miser
 
                         miser = Math.round((mise / currencies[i].price < currencies[i].ordermin ?
-                            currencies[i].ordermin * currencies[i].price : mise) * 10000) / 10000
+                            currencies[i].ordermin * currencies[i].price : mise) * 100000) / 100000
 
-                        volume = Math.round((miser / currencies[i].price) * 10000) / 10000
+                        volume = Math.round((miser / currencies[i].price) * 100000) / 100000
 
-                        close_price = Math.round(((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)) * 10000) / 10000
+                        close_price = Math.round(((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)) * 100000) / 100000
 
                         let plus_value = Math.round((((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)) *
                             (Number(miser) / Number(currencies[i].price) < Number(currencies[i].ordermin) ?
-                                Number(currencies[i].ordermin) : Number(miser) / Number(currencies[i].price))) * 10000) / 10000
+                                Number(currencies[i].ordermin) : Number(miser) / Number(currencies[i].price))) * 100000) / 100000
 
                         const order = Object.create(null);
                         order.currency = currencies[i].key
