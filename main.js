@@ -104,16 +104,16 @@ function api(methods, params) {
             for (let i = 0; i < currencies_open.length; i++) {
 
                 Object.entries(currencies).forEach(([, value]) => {
-                    if (value != null && currencies_open[i]['descr'].pair === value.altname) {
+                    if (currencies_open[i]['descr'].pair === value.altname) {
                         const order = Object.create(null);
                         order.currency = currencies_open[i]['descr'].pair
                         order.volume = Number(currencies_open[i]['vol'])
-                        order.start = Number((currencies_open[i]['descr'].price - (currencies_open[i]['descr'].price * profit / 100)).toFixed(2))
-                        order.now = Number(Number((value.price)).toFixed(2))
+                        order.start = Number((currencies_open[i]['descr'].price - (currencies_open[i]['descr'].price * profit / 100)).toFixed(3))
+                        order.now = Number(Number((value.price)).toFixed(3))
                         order.end = Number(currencies_open[i]['descr'].price)
-                        order.mise = Number(Number(order.start * order.volume).toFixed(2))
-                        order.gain_now = Number((value.price * currencies_open[i]['vol']).toFixed(2))
-                        order.gain = Number((currencies_open[i]['descr'].price * currencies_open[i]['vol']).toFixed(2))
+                        order.mise = Number(Number(order.start * order.volume).toFixed(3))
+                        order.gain_now = Number((value.price * currencies_open[i]['vol']).toFixed(3))
+                        order.gain = Number((currencies_open[i]['descr'].price * currencies_open[i]['vol']).toFixed(3))
                         let date = new Date(currencies_open[i]['opentm'] * 1000)
                         order.date = date.getFullYear() + '-' +
                             ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
@@ -122,15 +122,14 @@ function api(methods, params) {
                             ('0' + date.getMinutes()).slice(-2) + ':' +
                             ('0' + date.getSeconds()).slice(-2)
                         orders.push(order)
-
-                        value = null
                     }
                 })
             }
 
-            Object.entries(currencies).forEach(([, value]) => {
-                if (value === null)
-                    currencies = currencies.filter(item => item !== value)
+            currencies = currencies.filter(item => item.price !== 0)
+
+            Object.entries(currencies_open).forEach(([, value]) => {
+                currencies = currencies.filter(item => item.altname !== value.descr.pair)
             })
 
             for (let i = 0; i < currencies.length; i++) {
