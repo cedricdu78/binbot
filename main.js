@@ -125,7 +125,7 @@ function api(methods, params) {
                             ('0' + date.getHours()).slice(-2) + ':' +
                             ('0' + date.getMinutes()).slice(-2) + ':' +
                             ('0' + date.getSeconds()).slice(-2)
-                        order.success = Number((100 * order.gain_now / order.gain_end).toFixed(2))
+                        order.success = Number((100 * order.gain_now / order.gain_end * 0.992).toFixed(2))
                         orders.push(order)
                     }
                 })
