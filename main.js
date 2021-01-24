@@ -94,11 +94,11 @@ function api(methods, params) {
                 }
             })
 
-            let res_price = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
-            if (res_price['error'].length > 0) console.error(res_price['error'])
+            res = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
+            if (res['error'].length > 0) console.error(res['error'])
 
             for (let i = 0; i < currencies.length; i++) {
-                Object.entries(res_price['result']).forEach(([key, value]) => {
+                Object.entries(res['result']).forEach(([key, value]) => {
                     if (currencies[i].key === key) {
                         currencies[i].price = value.a[0]
                     }
@@ -110,14 +110,14 @@ function api(methods, params) {
                 Object.entries(currencies).forEach(([, value]) => {
                     if (currencies_open[i]['descr'].pair === value.altname) {
                         const order = Object.create(null);
-                        order.currency = currencies_open[i]['descr'].pair
+                        order.currency = value.wsname
                         order.volume = Number(currencies_open[i]['vol'])
                         order.start = Number((currencies_open[i]['descr'].price - (currencies_open[i]['descr'].price * profit / 100)).toFixed(3))
                         order.now = Number(Number((value.price)).toFixed(3))
                         order.end = Number(currencies_open[i]['descr'].price)
                         order.mise = Number(Number(order.start * order.volume).toFixed(3))
                         order.gain_now = Number((value.price * currencies_open[i]['vol']).toFixed(3))
-                        order.gain = Number((currencies_open[i]['descr'].price * currencies_open[i]['vol']).toFixed(3))
+                        order.gain_end = Number((currencies_open[i]['descr'].price * currencies_open[i]['vol']).toFixed(3))
                         let date = new Date(currencies_open[i]['opentm'] * 1000)
                         order.date = date.getFullYear() + '-' +
                             ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
@@ -125,6 +125,7 @@ function api(methods, params) {
                             ('0' + date.getHours()).slice(-2) + ':' +
                             ('0' + date.getMinutes()).slice(-2) + ':' +
                             ('0' + date.getSeconds()).slice(-2)
+                        order.success = Number((100 * order.gain_now / order.gain_end).toFixed(2))
                         orders.push(order)
                     }
                 })
@@ -180,14 +181,14 @@ function api(methods, params) {
                                 Number(currencies[i].ordermin) : Number(miser) / Number(currencies[i].price))) * 100000) / 100000
 
                         const order = Object.create(null);
-                        order.currency = currencies[i].key
+                        order.currency = currencies[i].wsname
                         order.volume = volume
                         order.start = Number(currencies[i].price)
                         order.now = Number(currencies[i].price)
                         order.end = close_price
                         order.mise = miser
-                        order.gain_now = plus_value
-                        order.gain = plus_value
+                        order.gain_now = miser
+                        order.gain_end = plus_value
                         let date = new Date()
                         order.date = date.getUTCFullYear() + '-' +
                             ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
@@ -195,6 +196,7 @@ function api(methods, params) {
                             ('0' + date.getHours()).slice(-2) + ':' +
                             ('0' + date.getMinutes()).slice(-2) + ':' +
                             ('0' + date.getSeconds()).slice(-2)
+                        order.success = Number((100 * order.gain_now / order.gain_end).toFixed(2))
                         new_orders.push(order)
                     }
                 }
