@@ -202,7 +202,7 @@ function api(methods, params) {
                 }
             }
 
-            if (orders.length > 0) console.table(orders)
+            if (orders.length > 0) console.table(orders.sort((a , b) => b.success - a.success))
             if (new_orders.length > 0) console.table(new_orders)
             console.table({'balance': Number(Number(balance).toFixed(2))})
 
