@@ -2,6 +2,45 @@ const secrets = require('./secrets')
 const KrakenClient = require('kraken-api');
 const kraken       = new KrakenClient(secrets.key(), secrets.secret());
 
+const io = require('socket.io')(8000, {
+    cors: {
+        origin: "*",
+    }
+});
+
+let currencies_api = []
+let orders_api = []
+let balances_api = []
+let state_bot = false
+
+io.on('connection', (socket) => {
+    console.log('A user connected');
+
+    socket.on('balances', (callback) => {
+        callback(balances_api)
+    })
+    socket.on('balances_euros', (callback) => {
+        callback(Number(balances_api["ZEUR"]).toFixed(2))
+    })
+    socket.on('orders', (callback) => {
+        callback(orders_api)
+    })
+    socket.on('currencies', (callback) => {
+        callback(currencies_api)
+    })
+    socket.on('state_bot', (callback) => {
+        callback(state_bot)
+    })
+    socket.on('start_bot', (callback) => {
+        state_bot = true
+        callback(state_bot)
+    })
+    socket.on('stop_bot', (callback) => {
+        state_bot = false
+        callback(state_bot)
+    })
+});
+
 const methods = {
     public : {
         Time  : 'Time', Assets : 'Assets',
@@ -59,14 +98,15 @@ function api(methods, params) {
 
         try {
             let currencies = []
-            let currencies_open = []
             let orders = []
+            let currencies_open = []
             let new_orders = []
             let list_names = ''
 
             let res = await api(methods.private.Balance)
             if (res['error'].length > 0) console.error(res['error'])
-            let balance = res['result']['ZEUR']
+            balances_api = res['result']
+            let balance = balances_api['ZEUR']
 
             res = await api(methods.private.OpenOrders)
             if (res['error'].length > 0) console.error(res['error'])
@@ -96,7 +136,6 @@ function api(methods, params) {
 
             res = await api(methods.public.Ticker, {pair: list_names.slice(0, -1)})
             if (res['error'].length > 0) console.error(res['error'])
-
             for (let i = 0; i < currencies.length; i++) {
                 Object.entries(res['result']).forEach(([key, value]) => {
                     if (currencies[i].key === key) {
@@ -104,6 +143,8 @@ function api(methods, params) {
                     }
                 });
             }
+
+            currencies_api = currencies
 
             for (let i = 0; i < currencies_open.length; i++) {
 
@@ -131,6 +172,8 @@ function api(methods, params) {
                 })
             }
 
+            orders_api = orders
+
             currencies = currencies.filter(item => item.price !== 0)
 
             Object.entries(currencies_open).forEach(([, value]) => {
@@ -140,7 +183,7 @@ function api(methods, params) {
             for (let i = 0; i < currencies.length; i++) {
                 let miser = mise / currencies[i].price < currencies[i].ordermin ?
                     currencies[i].ordermin * currencies[i].price : mise
-                if (balance >= (keep_balance + miser)) {
+                if (balance >= (keep_balance + miser) && state_bot) {
                     new Promise(res => setTimeout(res, 100));
 
                     res = await api(methods.public.OHLC, {pair: currencies[i].altname, interval: interval})
@@ -159,13 +202,13 @@ function api(methods, params) {
                         let volume = miser / currencies[i].price
                         let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
-                        res = await api(methods.private.AddOrder, {
-                            'pair': currencies[i].key, 'type': 'buy',
-                            'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
-                            'close[ordertype]': 'take-profit',
-                            'close[price]': close_price
-                        })
-                        if (res['error'].length > 0) console.error(res['error'])
+                        // res = await api(methods.private.AddOrder, {
+                        //     'pair': currencies[i].key, 'type': 'buy',
+                        //     'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
+                        //     'close[ordertype]': 'take-profit',
+                        //     'close[price]': close_price
+                        // })
+                        // if (res['error'].length > 0) console.error(res['error'])
 
                         balance -= miser
 
@@ -206,7 +249,7 @@ function api(methods, params) {
             if (new_orders.length > 0) console.table(new_orders)
             console.table({'balance': Number(Number(balance).toFixed(2))})
 
-            await new Promise(res => setTimeout(res, 30000));
+            await new Promise(res => setTimeout(res, 300000));
         } catch (err) {
             console.error(err)
         }
