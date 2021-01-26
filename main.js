@@ -2,10 +2,16 @@ const secrets = require('./secrets')
 const KrakenClient = require('kraken-api');
 const kraken       = new KrakenClient(secrets.key(), secrets.secret());
 
-const io = require('socket.io')(8000, {
+let app = require("express")();
+let http = require("http").Server(app);
+let io = require("socket.io")(http, {
     cors: {
-        origin: "*",
+	    origin: "*",
     }
+});
+
+http.listen(8000, '127.0.0.1', function () {
+  console.log("listening in port 8000");
 });
 
 let currencies_api = []
