@@ -14,8 +14,6 @@ let balances_api = []
 let state_bot = false
 
 io.on('connection', (socket) => {
-    console.log('A user connected');
-
     socket.on('balances', (callback) => {
         callback(balances_api)
     })
