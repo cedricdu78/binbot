@@ -80,6 +80,15 @@ function api(methods, params) {
     return kraken.api(methods, params, null)
 }
 
+const currencies_blacklist = [
+    "USDTEUR",
+    "USDCEUR",
+    "DAIEUR",
+    "PAXGEUR",
+    "TBTCEUR",
+    "YFIEUR"
+]
+
 (async () => {
 
     const interval = 15// interval value data historic (one week)
@@ -88,15 +97,6 @@ function api(methods, params) {
     const profit = 10// mise + 10 %
     const mise = 25
     const keep_balance = 0
-
-    const currencies_blacklist = [
-        "USDTEUR",
-        "USDCEUR",
-        "DAIEUR",
-        "PAXGEUR",
-        "TBTCEUR",
-        "YFIEUR"
-    ]
 
     while (1) {
 
