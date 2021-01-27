@@ -206,13 +206,13 @@ function api(methods, params) {
                         let volume = miser / currencies[i].price
                         let close_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
 
-                        // res = await api(methods.private.AddOrder, {
-                        //     'pair': currencies[i].key, 'type': 'buy',
-                        //     'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
-                        //     'close[ordertype]': 'take-profit',
-                        //     'close[price]': close_price
-                        // })
-                        // if (res['error'].length > 0) console.error(res['error'])
+                        res = await api(methods.private.AddOrder, {
+                             'pair': currencies[i].key, 'type': 'buy',
+                             'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
+                             'close[ordertype]': 'take-profit',
+                             'close[price]': close_price
+			})
+                        if (res['error'].length > 0) console.error(res['error'])
 
                         balance -= miser
 
