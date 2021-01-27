@@ -211,7 +211,7 @@ function api(methods, params) {
                              'ordertype': 'market', 'volume': volume, 'close[type]': 'sell',
                              'close[ordertype]': 'take-profit',
                              'close[price]': close_price
-			})
+                        })
                         if (res['error'].length > 0) console.error(res['error'])
 
                         balance -= miser
