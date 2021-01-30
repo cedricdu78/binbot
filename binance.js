@@ -65,7 +65,6 @@ const binance = new Binance().options({
             }
 
             Object.entries(currencies_open).forEach(([, value]) => {
-                console.log(value.symbol)
                 currencies = currencies.filter(item => item.altname !== value.symbol)
             })
 
