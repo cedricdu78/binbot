@@ -1,6 +1,6 @@
 const secrets = require('./secrets')
 const KrakenClient = require('kraken-api');
-const kraken       = new KrakenClient(secrets.key(), secrets.secret());
+const kraken       = new KrakenClient(secrets.kraken_key(), secrets.kraken_secret());
 
 let app = require("express")();
 let http = require("http").Server(app);
