@@ -64,9 +64,10 @@ const binance = new Binance().options({
                 })
             }
 
-            // Object.entries(currencies_open).forEach(([, value]) => {
-            //     currencies = currencies.filter(item => item.altname !== value["descr"].pair)
-            // })
+            Object.entries(currencies_open).forEach(([, value]) => {
+                console.log(value.symbol)
+                currencies = currencies.filter(item => item.altname !== value.symbol)
+            })
 
             for (let i = 0; i < currencies.length; i++) {
                 if (balance >= (keep_balance + mise)) {
