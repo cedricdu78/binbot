@@ -18,12 +18,12 @@ function average(a) {
 (async () => {
 
     const whitelist = [
-        "AAVEUSDT", "ADAUSDT", "ALGOUSDT", "ANTUSDT", "ATOMUSDT", "BALUSDT",
-        "BATUSDT", "BCHUSDT", "COMPUSDT", "CRVUSDT", "DASHUSDT", "DOTUSDT", "EOSUSDT", "FILUSDT", "FLOWUSDT", "GNOUSDT", "GRTUSDT",
-        "ICXUSDT", "KAVAUSDT", "KEEPUSDT", "KNCUSDT", "KSMUSDT", "LINKUSDT", "LSKUSDT",
-        "MANAUSDT", "NANOUSDT", "OMGUSDT", "OXTUSDT", "QTUMUSDT", "REPV2USDT",
-        "SCUSDT", "SNXUSDT", "STORJUSDT", "TRXUSDT", "UNIUSDT", "WAVESUSDT", "XDGUSDT", "ETCUSDT", "ETHUSDT",
-        "LTCUSDT", "MLNUSDT", "REPUSDT", "XTZUSDT", "XBTUSDT", "XLMUSDT", "XMRUSDT", "XRPUSDT", "ZECUSDT"
+        "AAVEUSDT", "ADAUSDT", "ALGOUSDT", "ANTUSDT", "ATOMUSDT", "BALUSDT", "GRTUSDT","FLOWUSDT",
+        "BATUSDT", "BCHUSDT", "COMPUSDT", "CRVUSDT", "DASHUSDT", "DOTUSDT", "EOSUSDT", "FILUSDT",
+        "ICXUSDT", "KAVAUSDT", "KEEPUSDT", "KNCUSDT", "KSMUSDT", "LINKUSDT", "LSKUSDT", "ETHUSDT",
+        "MANAUSDT", "NANOUSDT", "OMGUSDT", "OXTUSDT", "QTUMUSDT", "REPV2USDT", "GNOUSDT", "ZECUSDT",
+        "SCUSDT", "SNXUSDT", "STORJUSDT", "TRXUSDT", "UNIUSDT", "WAVESUSDT", "XDGUSDT", "ETCUSDT",
+        "LTCUSDT", "MLNUSDT", "REPUSDT", "XTZUSDT", "XBTUSDT", "XLMUSDT", "XMRUSDT", "XRPUSDT",
     ]
 
     const interval = "15m", limit = 673
@@ -36,13 +36,11 @@ function average(a) {
 
         try {
             let currencies = []
-            let currencies_open = []
             let orders = []
             let new_orders = []
 
             let balance = (await binance.balance(null)).USDT.available;
-
-            currencies_open = await binance.openOrders()
+            let currencies_open = await binance.openOrders()
 
             let res = await binance.bookTickers()
             Object.entries(res).forEach(([key, value]) => {
