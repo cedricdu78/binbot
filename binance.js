@@ -15,17 +15,24 @@ function average(a) {
     return c/b;
 }
 
+const whitelist = [
+    "AAVEUSDT", "ADAUSDT", "ALGOUSDT", "ANTUSDT", "ATOMUSDT", "BALUSDT", "GRTUSDT","FLOWUSDT",
+    "BATUSDT", "BCHUSDT", "COMPUSDT", "CRVUSDT", "DASHUSDT", "DOTUSDT", "EOSUSDT", "FILUSDT",
+    "ICXUSDT", "KAVAUSDT", "KEEPUSDT", "KNCUSDT", "KSMUSDT", "LINKUSDT", "LSKUSDT", "ETHUSDT",
+    "MANAUSDT", "NANOUSDT", "OMGUSDT", "OXTUSDT", "QTUMUSDT", "REPV2USDT", "GNOUSDT", "ZECUSDT",
+    "SCUSDT", "SNXUSDT", "STORJUSDT", "TRXUSDT", "UNIUSDT", "WAVESUSDT", "XDGUSDT", "ETCUSDT",
+    "LTCUSDT", "MLNUSDT", "REPUSDT", "XTZUSDT", "XBTUSDT", "XLMUSDT", "XMRUSDT", "XRPUSDT",
+]
+
+let tickers = []
+binance.websockets.bookTickers(undefined, (callback) => {
+    if (whitelist.indexOf(callback.symbol) > -1 && Number(callback.bestAsk) !== 0) {
+        tickers = tickers.filter(item => item.symbol !== callback.symbol)
+        tickers.push({"symbol": callback.symbol, "bestAsk": callback.bestAsk})
+    }
+});
+
 (async () => {
-
-    const whitelist = [
-        "AAVEUSDT", "ADAUSDT", "ALGOUSDT", "ANTUSDT", "ATOMUSDT", "BALUSDT", "GRTUSDT","FLOWUSDT",
-        "BATUSDT", "BCHUSDT", "COMPUSDT", "CRVUSDT", "DASHUSDT", "DOTUSDT", "EOSUSDT", "FILUSDT",
-        "ICXUSDT", "KAVAUSDT", "KEEPUSDT", "KNCUSDT", "KSMUSDT", "LINKUSDT", "LSKUSDT", "ETHUSDT",
-        "MANAUSDT", "NANOUSDT", "OMGUSDT", "OXTUSDT", "QTUMUSDT", "REPV2USDT", "GNOUSDT", "ZECUSDT",
-        "SCUSDT", "SNXUSDT", "STORJUSDT", "TRXUSDT", "UNIUSDT", "WAVESUSDT", "XDGUSDT", "ETCUSDT",
-        "LTCUSDT", "MLNUSDT", "REPUSDT", "XTZUSDT", "XBTUSDT", "XLMUSDT", "XMRUSDT", "XRPUSDT",
-    ]
-
     const interval = "15m", limit = 673
     const a_median = 0, b_median = 20
     const profit = 10
@@ -42,20 +49,16 @@ function average(a) {
             let balance = (await binance.balance(null)).USDT.available;
             let currencies_open = await binance.openOrders()
 
-            let res = await binance.bookTickers()
-            Object.entries(res).forEach(([key, value]) => {
-                if (key.endsWith("USDT") && Number(value.ask) !== 0
-                && whitelist.indexOf(key) > -1) {
-                    const _currency = Object.create(null);
-                    _currency.key = key
-                    _currency.altname = key
-                    _currency.base = key.replace("USDT", "")
-                    _currency.quote = "USDT"
-                    _currency.wsname = _currency.base + "/" + _currency.quote
-                    _currency.ordermin = 0
-                    _currency.price = value.ask
-                    currencies.push(_currency)
-                }
+            Object.entries(tickers).forEach(([key, value]) => {
+                const _currency = Object.create(null);
+                _currency.key = value.symbol
+                _currency.altname = value.symbol
+                _currency.base = value.symbol.replace("USDT", "")
+                _currency.quote = "USDT"
+                _currency.wsname = _currency.base + "/" + _currency.quote
+                _currency.ordermin = 0
+                _currency.price = value.bestAsk
+                currencies.push(_currency)
             })
 
             for (let i = 0; i < currencies_open.length; i++) {
@@ -91,7 +94,7 @@ function average(a) {
                     new Promise(res => setTimeout(res, 100));
 
                     let moy = []
-                    res = await binance.candlesticks(currencies[i].key, interval, null, {limit: limit})
+                    let res = await binance.candlesticks(currencies[i].key, interval, null, {limit: limit})
                     Object.entries(res).forEach(([key, value]) => {
                         moy.push(value[4])
                     })
@@ -163,9 +166,9 @@ function average(a) {
 
             if (orders.length > 0) console.table(orders.sort((a , b) => b.success - a.success))
             if (new_orders.length > 0) console.table(new_orders)
-            console.table({'balance': Number(Number(balance).toFixed(2))})
+            console.table({'balance ($)': Number(Number(balance).toFixed(2)), 'Number Crypto': tickers.length})
 
-            await new Promise(res => setTimeout(res, 120000));
+            await new Promise(res => setTimeout(res, 30000));
         } catch (err) {
             console.error(err)
         }
