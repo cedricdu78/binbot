@@ -6,9 +6,28 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
+function average(a) {
+    let b = a.length,
+        c = 0, i;
+    for (i = 0; i < b; i++){
+        c += Number(a[i]);
+    }
+    return c/b;
+}
+
 (async () => {
+
+    const whitelist = [
+        "AAVEUSDT", "ADAUSDT", "ALGOUSDT", "ANTUSDT", "ATOMUSDT", "BALUSDT",
+        "BATUSDT", "BCHUSDT", "COMPUSDT", "CRVUSDT", "DASHUSDT", "DOTUSDT", "EOSUSDT", "FILUSDT", "FLOWUSDT", "GNOUSDT", "GRTUSDT",
+        "ICXUSDT", "KAVAUSDT", "KEEPUSDT", "KNCUSDT", "KSMUSDT", "LINKUSDT", "LSKUSDT",
+        "MANAUSDT", "NANOUSDT", "OMGUSDT", "OXTUSDT", "QTUMUSDT", "REPV2USDT",
+        "SCUSDT", "SNXUSDT", "STORJUSDT", "TRXUSDT", "UNIUSDT", "WAVESUSDT", "XDGUSDT", "ETCUSDT", "ETHUSDT",
+        "LTCUSDT", "MLNUSDT", "REPUSDT", "XTZUSDT", "XBTUSDT", "XLMUSDT", "XMRUSDT", "XRPUSDT", "ZECUSDT"
+    ]
+
     const interval = "15m", limit = 673
-    const a_median = 5, b_median = 20
+    const a_median = 0, b_median = 20
     const profit = 10
     const mise = 30
     const keep_balance = 0
@@ -27,7 +46,8 @@ const binance = new Binance().options({
 
             let res = await binance.bookTickers()
             Object.entries(res).forEach(([key, value]) => {
-                if (key.endsWith("USDT") && Number(value.ask) !== 0) {
+                if (key.endsWith("USDT") && Number(value.ask) !== 0
+                && whitelist.indexOf(key) > -1) {
                     const _currency = Object.create(null);
                     _currency.key = key
                     _currency.altname = key
@@ -79,15 +99,11 @@ const binance = new Binance().options({
                     })
 
                     currencies[i].price = res[Object.entries(res).length - 1][4]
-
-                    let max = Math.max.apply(null, moy)
                     moy = average(moy)
-                    let prc = ((max - moy) / moy) * 100
 
                     if (moy * (100 - b_median) / 100 <= currencies[i].price &&
                         moy * (100 - a_median) / 100 >= currencies[i].price &&
-                        currencies[i].price > 0 &&
-                        prc >= 10) {
+                        currencies[i].price > 0) {
 
                         let volume = (mise / currencies[i].price)
 
@@ -107,16 +123,20 @@ const binance = new Binance().options({
                             } else {
                                 balance -= mise
                                 let sell_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
+                                if (String(sell_price).split('.')[0] > 99)
+                                    sell_price = sell_price.toFixed(0)
+                                else if (String(sell_price).split('.')[0] > 9)
+                                    sell_price = sell_price.toFixed(1)
+                                else if (String(sell_price).split('.')[0] > 0)
+                                    sell_price = sell_price.toFixed(2)
+                                else
+                                    sell_price = sell_price.toFixed(3)
                                 binance.sell(currencies[i].key, volume, sell_price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
                                         console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson.msg)
                                     } else {
-
-                                        volume = Math.round((mise / currencies[i].price) * 100000) / 100000
-                                        sell_price = Math.round(((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)) * 100000) / 100000
                                         let plus_value = Math.round(Number(mise) / Number(currencies[i].price) * 100000) / 100000
-
                                         const order = Object.create(null);
                                         order.currency = currencies[i].wsname
                                         order.volume = volume
@@ -135,12 +155,10 @@ const binance = new Binance().options({
                                             ('0' + date.getSeconds()).slice(-2)
                                         order.success = Number((100 * order.gain_now / order.gain_end).toFixed(2))
                                         new_orders.push(order)
-
-                                        console.log("Take profit - OK: " + currencies[i].key)
                                     }
-                                });
+                                })
                             }
-                        });
+                        })
                     }
                 }
             }
@@ -149,7 +167,7 @@ const binance = new Binance().options({
             if (new_orders.length > 0) console.table(new_orders)
             console.table({'balance': Number(Number(balance).toFixed(2))})
 
-            await new Promise(res => setTimeout(res, 30000));
+            await new Promise(res => setTimeout(res, 120000));
         } catch (err) {
             console.error(err)
         }
