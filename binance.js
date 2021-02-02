@@ -166,7 +166,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
 
             if (orders.length > 0) console.table(orders.sort((a , b) => b.success - a.success))
             if (new_orders.length > 0) console.table(new_orders)
-            console.table({'balance ($)': Number(Number(balance).toFixed(2)), 'Number Crypto': tickers.length})
+            console.table({'balance ($)': Number(Number(balance).toFixed(2))})
         } catch (err) {
             console.error(err)
         }
