@@ -47,7 +47,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
         && !callback.symbol.endsWith("UPUSDT")
         && Number(callback.bestAsk) !== 0) {
         tickers = tickers.filter(item => item.symbol !== callback.symbol)
-        tickers.push({"symbol": callback.symbol, "bestAsk": callback.bestAsk})
+        tickers.push({"symbol": callback.symbol, "price": callback.bestAsk})
     }
 });
 
@@ -66,19 +66,18 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let new_orders = []
             let total = 0
 
-            let available = (await binance.balance(null))["USDT"].available
+            let balances = await binance.balance(null)
             let currencies_open = await binance.openOrders(undefined, null)
 
             Object.entries(tickers).forEach(([, value]) => {
-                if (value.bestAsk > 0) {
+                if (value.price > 0) {
                     const _currency = Object.create(null);
                     _currency.key = value.symbol
                     _currency.altname = value.symbol
                     _currency.base = value.symbol.replace("USDT", "")
                     _currency.quote = "USDT"
                     _currency.wsname = _currency.base + "/" + _currency.quote
-                    _currency.ordermin = 0
-                    _currency.price = value.bestAsk
+                    _currency.price = value.price
                     currencies.push(_currency)
                 }
             })
@@ -101,12 +100,15 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 })
             }
 
-            Object.entries(currencies_open).forEach(([, value]) => {
-                currencies = currencies.filter(item => item.altname !== value.symbol)
+            Object.entries(balances).forEach(([key, value]) => {
+                if (value.available > 0 && ["USDT","BNB"].indexOf(key) < 0)
+                    console.log(key + " has units out of order: " + value.available)
+                if (value.onOrder > 0)
+                    currencies = currencies.filter(item => item.altname !== key + "USDT")
             })
 
             for (let i = 0; i < currencies.length; i++) {
-                if (available >= (keep_balance + mise)) {
+                if (balances["USDT"].available >= (keep_balance + mise)) {
                     new Promise(res => setTimeout(res, 100));
 
                     let moy = []
@@ -133,7 +135,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                 console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson["msg"])
                             } else {
                                 console.log(currencies[i].base + ": test")
-                                available -= mise
+                                balances["USDT"].available -= mise
                                 let sell_price = fixValue((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price))
                                 binance.sell(currencies[i].key, volume, sell_price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
@@ -164,8 +166,8 @@ binance.websockets.bookTickers(undefined, (callback) => {
             if (new_orders.length > 0) console.table(new_orders)
             console.table({
                 'Balance': {
-                    'Available': Number(Number(available).toFixed(2)),
-                    'Total': Number(Number(total).toFixed(2)),
+                    'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+                    'Total': Number(Number(total + Number(balances["USDT"].available)).toFixed(2)),
                 }
             })
         } catch (err) {
