@@ -15,18 +15,12 @@ function average(a) {
     return c/b;
 }
 
-const whitelist = [
-    "AAVEUSDT", "ADAUSDT", "ALGOUSDT", "ANTUSDT", "ATOMUSDT", "BALUSDT", "GRTUSDT","FLOWUSDT",
-    "BATUSDT", "BCHUSDT", "COMPUSDT", "CRVUSDT", "DASHUSDT", "DOTUSDT", "EOSUSDT", "FILUSDT",
-    "ICXUSDT", "KAVAUSDT", "KEEPUSDT", "KNCUSDT", "KSMUSDT", "LINKUSDT", "LSKUSDT", "ETHUSDT",
-    "MANAUSDT", "NANOUSDT", "OMGUSDT", "OXTUSDT", "QTUMUSDT", "REPV2USDT", "GNOUSDT", "ZECUSDT",
-    "SCUSDT", "SNXUSDT", "STORJUSDT", "TRXUSDT", "UNIUSDT", "WAVESUSDT", "XDGUSDT", "ETCUSDT",
-    "LTCUSDT", "MLNUSDT", "REPUSDT", "XTZUSDT", "XBTUSDT", "XLMUSDT", "XMRUSDT", "XRPUSDT",
-]
-
 let tickers = []
 binance.websockets.bookTickers(undefined, (callback) => {
-    if (whitelist.indexOf(callback.symbol) > -1 && Number(callback.bestAsk) !== 0) {
+    if (callback.symbol.endsWith("USDT")
+        && !callback.symbol.endsWith("DOWNUSDT")
+        && !callback.symbol.endsWith("UPUSDT")
+        && Number(callback.bestAsk) !== 0) {
         tickers = tickers.filter(item => item.symbol !== callback.symbol)
         tickers.push({"symbol": callback.symbol, "bestAsk": callback.bestAsk})
     }
@@ -50,15 +44,17 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let currencies_open = await binance.openOrders()
 
             Object.entries(tickers).forEach(([key, value]) => {
-                const _currency = Object.create(null);
-                _currency.key = value.symbol
-                _currency.altname = value.symbol
-                _currency.base = value.symbol.replace("USDT", "")
-                _currency.quote = "USDT"
-                _currency.wsname = _currency.base + "/" + _currency.quote
-                _currency.ordermin = 0
-                _currency.price = value.bestAsk
-                currencies.push(_currency)
+                if (value.bestAsk > 0) {
+                    const _currency = Object.create(null);
+                    _currency.key = value.symbol
+                    _currency.altname = value.symbol
+                    _currency.base = value.symbol.replace("USDT", "")
+                    _currency.quote = "USDT"
+                    _currency.wsname = _currency.base + "/" + _currency.quote
+                    _currency.ordermin = 0
+                    _currency.price = value.bestAsk
+                    currencies.push(_currency)
+                }
             })
 
             for (let i = 0; i < currencies_open.length; i++) {
@@ -100,11 +96,15 @@ binance.websockets.bookTickers(undefined, (callback) => {
                     })
 
                     currencies[i].price = res[Object.entries(res).length - 1][4]
+                    let min = Math.min.apply(null, moy)
+                    let max = Math.max.apply(null, moy)
                     moy = average(moy)
+                    let prc = ((max - min) / min) * 100
+                    let prcm = ((max - moy) / moy) * 100
 
                     if (moy * (100 - b_median) / 100 <= currencies[i].price &&
                         moy * (100 - a_median) / 100 >= currencies[i].price &&
-                        currencies[i].price > 0) {
+                        currencies[i].price > 0 && prc >= 10 && prcm >= 10) {
 
                         let volume = (mise / currencies[i].price)
 
