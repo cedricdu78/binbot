@@ -15,6 +15,31 @@ function average(a) {
     return c/b;
 }
 
+function fixValue(value) {
+    if (String(value).split('.')[0] > 99)
+        return value.toFixed(0)
+    else if (String(value).split('.')[0] > 9)
+        return value.toFixed(1)
+    else if (String(value).split('.')[0] > 0)
+        return value.toFixed(2)
+    else
+        return value.toFixed(5)
+}
+
+function order(currency, volume, now, end, mise, gain_now, gain_end, date) {
+    const order = Object.create(null)
+    order.currency = currency
+    order.volume = volume
+    order.now = now
+    order.end = end
+    order.mise = mise
+    order.gain_now = gain_now
+    order.gain_end = gain_end
+    order.date = date
+    order.success = Number((100 * order.gain_now / order.gain_end * 0.992).toFixed(2))
+    return order
+}
+
 let tickers = []
 binance.websockets.bookTickers(undefined, (callback) => {
     if (callback.symbol.endsWith("USDT")
@@ -39,11 +64,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let currencies = []
             let orders = []
             let new_orders = []
+            let total = 0
 
-            let balance = (await binance.balance(null)).USDT.available;
-            let currencies_open = await binance.openOrders()
+            let available = (await binance.balance(null))["USDT"].available
+            let currencies_open = await binance.openOrders(undefined, null)
 
-            Object.entries(tickers).forEach(([key, value]) => {
+            Object.entries(tickers).forEach(([, value]) => {
                 if (value.bestAsk > 0) {
                     const _currency = Object.create(null);
                     _currency.key = value.symbol
@@ -57,26 +83,20 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 }
             })
 
-            for (let i = 0; i < currencies_open.length; i++) {
+            for (let i = 0; i < Object.entries(currencies_open).length; i++) {
                 Object.entries(currencies).forEach(([, value]) => {
                     if (currencies_open[i].symbol === value.key) {
-                        const order = Object.create(null);
-                        order.currency = value.wsname
-                        order.volume = Number(currencies_open[i]['origQty'])
-                        order.now = Number(Number((value.price)).toFixed(3))
-                        order.end = Number(currencies_open[i]['price'])
-                        order.mise = mise
-                        order.gain_now = Number((value.price * currencies_open[i]['origQty']).toFixed(3))
-                        order.gain_end = Number((currencies_open[i]['price'] * currencies_open[i]['origQty']).toFixed(3))
-                        let date = new Date(currencies_open[i]['time'])
-                        order.date = date.getFullYear() + '-' +
-                            ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
-                            ('0' + date.getDate()).slice(-2) + ' ' +
-                            ('0' + date.getHours()).slice(-2) + ':' +
-                            ('0' + date.getMinutes()).slice(-2) + ':' +
-                            ('0' + date.getSeconds()).slice(-2)
-                        order.success = Number((100 * order.gain_now / order.gain_end * 0.992).toFixed(2))
-                        orders.push(order)
+                        orders.push(order(
+                            value.wsname,
+                            Number(currencies_open[i]['origQty']),
+                            Number(Number((value.price)).toFixed(3)),
+                            Number(currencies_open[i]['price']),
+                            mise,
+                            Number((value.price * currencies_open[i]['origQty']).toFixed(3)),
+                            Number((currencies_open[i]['price'] * currencies_open[i]['origQty']).toFixed(3)),
+                            new Date(currencies_open[i]['time'])
+                        ))
+                        total += Number((value.price * currencies_open[i]['origQty']).toFixed(3))
                     }
                 })
             }
@@ -86,12 +106,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
             })
 
             for (let i = 0; i < currencies.length; i++) {
-                if (balance >= (keep_balance + mise)) {
+                if (available >= (keep_balance + mise)) {
                     new Promise(res => setTimeout(res, 100));
 
                     let moy = []
                     let res = await binance.candlesticks(currencies[i].key, interval, null, {limit: limit})
-                    Object.entries(res).forEach(([key, value]) => {
+                    Object.entries(res).forEach(([, value]) => {
                         moy.push(value[4])
                     })
 
@@ -106,56 +126,32 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         moy * (100 - a_median) / 100 >= currencies[i].price &&
                         currencies[i].price > 0 && prc >= 10 && prcm >= 10) {
 
-                        let volume = (mise / currencies[i].price)
-
-                        if (String(volume).split('.')[0] > 99)
-                            volume = volume.toFixed(0)
-                        else if (String(volume).split('.')[0] > 9)
-                            volume = volume.toFixed(1)
-                        else if (String(volume).split('.')[0] > 0)
-                            volume = volume.toFixed(2)
-                        else
-                            volume = volume.toFixed(3)
-
+                        let volume = fixValue(mise / currencies[i].price)
                         await binance.marketBuy(currencies[i].key, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
-                                console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson.msg)
+                                console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson["msg"])
                             } else {
-                                balance -= mise
-                                let sell_price = (Number(currencies[i].price) * profit / 100) + Number(currencies[i].price)
-                                if (String(sell_price).split('.')[0] > 99)
-                                    sell_price = sell_price.toFixed(0)
-                                else if (String(sell_price).split('.')[0] > 9)
-                                    sell_price = sell_price.toFixed(1)
-                                else if (String(sell_price).split('.')[0] > 0)
-                                    sell_price = sell_price.toFixed(2)
-                                else
-                                    sell_price = sell_price.toFixed(3)
+                                console.log(currencies[i].base + ": test")
+                                available -= mise
+                                let sell_price = fixValue((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price))
                                 binance.sell(currencies[i].key, volume, sell_price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
-                                        console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson.msg)
+                                        console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson["msg"])
                                     } else {
-                                        let plus_value = Math.round(Number(mise) / Number(currencies[i].price) * 100000) / 100000
-                                        const order = Object.create(null);
-                                        order.currency = currencies[i].wsname
-                                        order.volume = volume
-                                        order.start = Number(currencies[i].price)
-                                        order.now = Number(currencies[i].price)
-                                        order.end = sell_price
-                                        order.mise = mise
-                                        order.gain_now = mise
-                                        order.gain_end = plus_value
-                                        let date = new Date()
-                                        order.date = date.getUTCFullYear() + '-' +
-                                            ('0' + (date.getMonth() + 1)).slice(-2) + '-' +
-                                            ('0' + date.getDate()).slice(-2) + ' ' +
-                                            ('0' + date.getHours()).slice(-2) + ':' +
-                                            ('0' + date.getMinutes()).slice(-2) + ':' +
-                                            ('0' + date.getSeconds()).slice(-2)
-                                        order.success = Number((100 * order.gain_now / order.gain_end).toFixed(2))
-                                        new_orders.push(order)
+                                        new_orders.push(order(
+                                            currencies[i].wsname,
+                                            volume,
+                                            Number(currencies[i].price),
+                                            Number(currencies[i].price),
+                                            sell_price,
+                                            mise,
+                                            mise,
+                                            Math.round(Number(mise) / Number(currencies[i].price) * 100000) / 100000,
+                                            new Date()
+                                        ))
+                                        total += mise
                                     }
                                 })
                             }
@@ -166,7 +162,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
 
             if (orders.length > 0) console.table(orders.sort((a , b) => b.success - a.success))
             if (new_orders.length > 0) console.table(new_orders)
-            console.table({'balance ($)': Number(Number(balance).toFixed(2))})
+            console.table({
+                'Balance': {
+                    'Available': Number(Number(available).toFixed(2)),
+                    'Total': Number(Number(total).toFixed(2)),
+                }
+            })
         } catch (err) {
             console.error(err)
         }
