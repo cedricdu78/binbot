@@ -55,7 +55,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
     const interval = "15m", limit = 673
     const a_median = 0, b_median = 20
     const profit = 10
-    const mise = 30
+    const mise = 40
     const keep_balance = 0
 
     while (1) {
