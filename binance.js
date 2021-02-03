@@ -72,8 +72,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 let base = value.symbol.replace("USDT", "")
                 let name = base + "/" + "USDT"
 
-                console.log(name)
-
                 if (balances[base].available > 0 && ["USDT","BNB"].indexOf(base) < 0)
                     console.log(name + " has units out of order: "
                         + (Number(balances[base].available) * value.price).toFixed(2) + "$")
