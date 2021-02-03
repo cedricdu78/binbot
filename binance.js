@@ -62,49 +62,46 @@ binance.websockets.bookTickers(undefined, (callback) => {
 
         try {
             let currencies = []
+            let currencies_open = []
             let orders = []
             let new_orders = []
             let total = 0
 
+            currencies_open = await binance.openOrders(undefined, null)
             let balances = await binance.balance(null)
-            let currencies_open = await binance.openOrders(undefined, null)
 
             Object.entries(tickers).forEach(([, value]) => {
                 if (value.price > 0) {
                     const _currency = Object.create(null);
                     _currency.key = value.symbol
-                    _currency.altname = value.symbol
                     _currency.base = value.symbol.replace("USDT", "")
                     _currency.quote = "USDT"
                     _currency.wsname = _currency.base + "/" + _currency.quote
                     _currency.price = value.price
-                    currencies.push(_currency)
-                }
-            })
 
-            for (let i = 0; i < Object.entries(currencies_open).length; i++) {
-                Object.entries(currencies).forEach(([, value]) => {
-                    if (currencies_open[i].symbol === value.key) {
+                    if (balances[_currency.base].available > 0 && ["USDT","BNB"].indexOf(_currency.base) < 0)
+                        console.log(_currency.wsname + " has units out of order: "
+                            + (Number(balances[_currency.base].available) * value.price).toFixed(2) + "$")
+
+                    if (Number(balances[_currency.base].onOrder) > 0) {
+                        let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
                         orders.push(order(
-                            value.wsname,
-                            Number(currencies_open[i]['origQty']),
-                            Number(Number((value.price)).toFixed(3)),
-                            Number(currencies_open[i]['price']),
+                            _currency.wsname,
+                            Number(_order['origQty']),
+                            Number(value.price),
+                            Number(_order.price),
                             mise,
-                            Number((value.price * currencies_open[i]['origQty']).toFixed(3)),
-                            Number((currencies_open[i]['price'] * currencies_open[i]['origQty']).toFixed(3)),
-                            new Date(currencies_open[i]['time'])
+                            Number((value.price * _order['origQty']).toFixed(3)),
+                            Number((_order.price * _order['origQty']).toFixed(3)),
+                            new Date(_order['time'])
                         ))
-                        total += Number((value.price * currencies_open[i]['origQty']).toFixed(3))
+                        total += Number((value.price * _order['origQty']).toFixed(3))
                     }
-                })
-            }
 
-            Object.entries(balances).forEach(([key, value]) => {
-                if (value.available > 0 && ["USDT","BNB"].indexOf(key) < 0)
-                    console.log(key + " has units out of order: " + value.available)
-                if (value.onOrder > 0)
-                    currencies = currencies.filter(item => item.altname !== key + "USDT")
+                    if (Number(balances[_currency.base].onOrder) === 0
+                        && balances[_currency.base].available === 0)
+                        currencies.push(_currency)
+                }
             })
 
             for (let i = 0; i < currencies.length; i++) {
@@ -134,7 +131,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                 let responseJson = JSON.parse(error.body)
                                 console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson["msg"])
                             } else {
-                                console.log(currencies[i].base + ": test")
                                 balances["USDT"].available -= mise
                                 let sell_price = fixValue((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price))
                                 binance.sell(currencies[i].key, volume, sell_price, {type: 'LIMIT'}, (error,) => {
@@ -144,13 +140,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                     } else {
                                         new_orders.push(order(
                                             currencies[i].wsname,
-                                            volume,
+                                            Number(volume),
                                             Number(currencies[i].price),
-                                            Number(currencies[i].price),
-                                            sell_price,
+                                            Number(sell_price),
                                             mise,
                                             mise,
-                                            Math.round(Number(mise) / Number(currencies[i].price) * 100000) / 100000,
+                                            Number(String(Number(sell_price) * volume).toFixed(3)),
                                             new Date()
                                         ))
                                         total += mise
