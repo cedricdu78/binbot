@@ -26,13 +26,12 @@ function fixValue(value) {
         return value.toFixed(5)
 }
 
-function order(currency, volume, now, end, mise, gain_now, gain_end, date) {
+function order(currency, volume, now, end, gain_now, gain_end, date) {
     const order = Object.create(null)
     order.currency = currency
     order.volume = volume
     order.now = now
     order.end = end
-    order.mise = mise
     order.gain_now = gain_now
     order.gain_end = gain_end
     order.date = date
@@ -61,8 +60,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
     while (1) {
 
         try {
-            let currencies = []
-            let currencies_open = []
+            let currencies_open
             let orders = []
             let new_orders = []
             let total = 0
@@ -70,82 +68,70 @@ binance.websockets.bookTickers(undefined, (callback) => {
             currencies_open = await binance.openOrders(undefined, null)
             let balances = await binance.balance(null)
 
-            Object.entries(tickers).forEach(([, value]) => {
-                if (value.price > 0) {
-                    const _currency = Object.create(null);
-                    _currency.key = value.symbol
-                    _currency.base = value.symbol.replace("USDT", "")
-                    _currency.quote = "USDT"
-                    _currency.wsname = _currency.base + "/" + _currency.quote
-                    _currency.price = value.price
+            for (const [, value] of Object.entries(tickers)) {
+                let base = value.symbol.replace("USDT", "")
+                let name = base + "/" + "USDT"
 
-                    if (balances[_currency.base].available > 0 && ["USDT","BNB"].indexOf(_currency.base) < 0)
-                        console.log(_currency.wsname + " has units out of order: "
-                            + (Number(balances[_currency.base].available) * value.price).toFixed(2) + "$")
+                console.log(name)
 
-                    if (Number(balances[_currency.base].onOrder) > 0) {
-                        let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
-                        orders.push(order(
-                            _currency.wsname,
-                            Number(_order['origQty']),
-                            Number(value.price),
-                            Number(_order.price),
-                            mise,
-                            Number((value.price * _order['origQty']).toFixed(3)),
-                            Number((_order.price * _order['origQty']).toFixed(3)),
-                            new Date(_order['time'])
-                        ))
-                        total += Number((value.price * _order['origQty']).toFixed(3))
-                    }
+                if (balances[base].available > 0 && ["USDT","BNB"].indexOf(base) < 0)
+                    console.log(name + " has units out of order: "
+                        + (Number(balances[base].available) * value.price).toFixed(2) + "$")
 
-                    if (Number(balances[_currency.base].onOrder) === 0
-                        && balances[_currency.base].available === 0)
-                        currencies.push(_currency)
+                if (Number(balances[base].onOrder) > 0) {
+                    let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
+                    orders.push(order(
+                        name,
+                        Number(_order['origQty']),
+                        Number(value.price),
+                        Number(_order.price),
+                        Number((value.price * _order['origQty']).toFixed(3)),
+                        Number((_order.price * _order['origQty']).toFixed(3)),
+                        new Date(_order['time'])
+                    ))
+                    total += Number((value.price * _order['origQty']).toFixed(3))
                 }
-            })
 
-            for (let i = 0; i < currencies.length; i++) {
-                if (balances["USDT"].available >= (keep_balance + mise)) {
-                    new Promise(res => setTimeout(res, 100));
-
+                if (Number(balances[base].onOrder) === 0
+                    && Number(balances[base].available) === 0
+                    && balances["USDT"].available >= (keep_balance + mise)) {
                     let moy = []
-                    let res = await binance.candlesticks(currencies[i].key, interval, null, {limit: limit})
+                    let res = await binance.candlesticks(value.symbol, interval, null, {limit: limit})
                     Object.entries(res).forEach(([, value]) => {
                         moy.push(value[4])
                     })
 
-                    currencies[i].price = res[Object.entries(res).length - 1][4]
+                    value.price = res[Object.entries(res).length - 1][4]
                     let min = Math.min.apply(null, moy)
                     let max = Math.max.apply(null, moy)
                     moy = average(moy)
                     let prc = ((max - min) / min) * 100
                     let prcm = ((max - moy) / moy) * 100
 
-                    if (moy * (100 - b_median) / 100 <= currencies[i].price &&
-                        moy * (100 - a_median) / 100 >= currencies[i].price &&
-                        currencies[i].price > 0 && prc >= 10 && prcm >= 10) {
+                    if (moy * (100 - b_median) / 100 <= value.price &&
+                        moy * (100 - a_median) / 100 >= value.price &&
+                        value.price > 0 && prc >= 10 && prcm >= 10) {
 
-                        let volume = fixValue(mise / currencies[i].price)
-                        await binance.marketBuy(currencies[i].key, volume, (error,) => {
+                        let volume = fixValue(mise / value.price)
+                        await binance.marketBuy(value.symbol, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
-                                console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson["msg"])
+                                console.log(base + " [" + responseJson.code + "]: " + responseJson["msg"])
                             } else {
                                 balances["USDT"].available -= mise
-                                let sell_price = fixValue((Number(currencies[i].price) * profit / 100) + Number(currencies[i].price))
-                                binance.sell(currencies[i].key, volume, sell_price, {type: 'LIMIT'}, (error,) => {
+                                let sell_price = fixValue((Number(value.price) * profit / 100) + Number(value.price))
+                                binance.sell(value.symbol, volume, sell_price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
-                                        console.log(currencies[i].base + " [" + responseJson.code + "]: " + responseJson["msg"])
+                                        console.log(base + " [" + responseJson.code + "]: " + responseJson["msg"])
                                     } else {
                                         new_orders.push(order(
-                                            currencies[i].wsname,
+                                            name,
                                             Number(volume),
-                                            Number(currencies[i].price),
+                                            Number(value.price),
                                             Number(sell_price),
                                             mise,
-                                            mise,
-                                            Number(String(Number(sell_price) * volume).toFixed(3)),
+                                            Number(Number(sell_price) * Number(volume)).toFixed(3),
                                             new Date()
                                         ))
                                         total += mise
