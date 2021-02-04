@@ -6,14 +6,14 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
-function order(currency, volume, now, end, date) {
+function order(currency, volume, now, end, timestamp) {
     const order = Object.create(null)
     order.currency = currency
-    order.volume = Number(volume)
-    order.now = Number(now)
-    order.end = Number(end)
-    order.date = new Date(date).toLocaleString('fr-FR')
-    order.success = Number((100 * now / end).toFixed(2))
+    order.volume = volume
+    order.now = now
+    order.end = end
+    order.date = new Date(timestamp).toLocaleString('fr-FR')
+    order.success = (100 * now / end).toFixed(2)
     return order
 }
 
