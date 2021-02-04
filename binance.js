@@ -73,8 +73,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         _order.price * _order['origQty'],
                         _order['time']
                     ))
-                    console.log(typeof value.price)
-                    console.log(typeof _order['origQty'])
                     total += value.price * _order['origQty']
                 }
 
@@ -142,7 +140,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
             console.table({
                 'Balance': {
                     'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                    'Total': (total + balances["USDT"].available).toFixed(2)
+                    'Total': Number(total + balances["USDT"].available).toFixed(2)
                 }
             })
         } catch (err) {
