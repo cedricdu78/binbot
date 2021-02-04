@@ -6,16 +6,14 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
-function order(currency, volume, now, end, gain_now, gain_end, date) {
+function order(currency, volume, now, end, date) {
     const order = Object.create(null)
     order.currency = currency
     order.volume = Number(volume)
     order.now = Number(now)
     order.end = Number(end)
-    order.gain_now = Number(gain_now)
-    order.gain_end = Number(gain_end)
     order.date = new Date(date).toLocaleString('fr-FR')
-    order.success = Number((100 * gain_now / gain_end).toFixed(2))
+    order.success = Number((100 * now / end).toFixed(2))
     return order
 }
 
@@ -69,8 +67,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         _order['origQty'],
                         value.price,
                         _order.price,
-                        value.price * _order['origQty'],
-                        _order.price * _order['origQty'],
                         _order['time']
                     ))
                     total += value.price * _order['origQty']
@@ -122,8 +118,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                             volume,
                                             value.price,
                                             price,
-                                            mise,
-                                            price*volume,
                                             Date.now()
                                         ))
                                         total += mise
@@ -140,7 +134,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
             console.table({
                 'Balance': {
                     'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                    'Total': Number((total + Number(balances["USDT"].available)).toFixed(2))
+                    'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
                 }
             })
         } catch (err) {
