@@ -140,7 +140,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
             console.table({
                 'Balance': {
                     'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                    'Total': Number(Number(total) + balances["USDT"].available).toFixed(2)
+                    'Total': Number(total + Number(balances["USDT"].available)).toFixed(2)
                 }
             })
         } catch (err) {
