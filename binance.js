@@ -12,8 +12,8 @@ function order(currency, volume, now, end, gain_now, gain_end, date) {
     order.volume = Number(volume)
     order.now = Number(now)
     order.end = Number(end)
-    order.gain_now = Number(gain_now.toFixed(2))
-    order.gain_end = Number(gain_end.toFixed(2))
+    order.gain_now = Number(gain_now)
+    order.gain_end = Number(gain_end)
     order.date = new Date(date).toLocaleString('fr-FR')
     order.success = Number((100 * gain_now / gain_end).toFixed(2))
     return order
@@ -73,7 +73,9 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         _order.price * _order['origQty'],
                         _order['time']
                     ))
-                    total += Number((value.price * _order['origQty']).toFixed(3))
+                    console.log(typeof value.price)
+                    console.log(typeof _order['origQty'])
+                    total += value.price * _order['origQty']
                 }
 
                 if (Number(balances[value.name].onOrder) === 0
@@ -106,7 +108,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         let lenPrice = Number(minPrice.minPrice).toString().split('.')[1].length
                         let price = Number(((Number(value.price) * profit / 100) + Number(value.price)).toFixed(lenPrice))
 
-                        await binance.marketBuy(value.symbol, volume, (error, result) => {
+                        await binance.marketBuy(value.symbol, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
                                 console.log(base + " [" + responseJson.code + "]: " + responseJson["msg"])
@@ -123,7 +125,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                             value.price,
                                             price,
                                             mise,
-                                            price,
+                                            price*volume,
                                             new Date().toLocaleString('fr-FR')
                                         ))
                                         total += mise
@@ -140,7 +142,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
             console.table({
                 'Balance': {
                     'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                    'Total': Number(Number(total + Number(balances["USDT"].available)).toFixed(2)),
+                    'Total': (total + balances["USDT"].available).toFixed(2)
                 }
             })
         } catch (err) {
