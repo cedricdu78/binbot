@@ -13,7 +13,7 @@ function order(currency, volume, now, end, timestamp) {
     order.now = Number(now)
     order.end = Number(end)
     order.date = new Date(timestamp).toLocaleString('fr-FR')
-    order.success = (100 * now / end).toFixed(2)
+    order.success = Number((100 * now / end).toFixed(2))
     return order
 }
 
@@ -64,7 +64,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 if (balances[value.name].onOrder > 0) {
                     let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
                     orders.push(order(
-                        value.name,
+                        value.symbol,
                         _order['origQty'],
                         value.price,
                         _order.price,
