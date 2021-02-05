@@ -12,7 +12,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "kraken-api": "^1.0.1",
-    "node-binance-api": "^0.12.4",
+    "node-binance-api": "^0.12.4"
   },
   "devDependencies": {
     "socket.io": "^3.1.0"
