@@ -6,21 +6,6 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
-const sqlite3 = require('sqlite3').verbose();
-let db = new sqlite3.Database('./binance.db', (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-});
-
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS prices (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, 
-    name TEXT,
-    price INTEGER,
-    date_ct TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
-});
-
 function order(currency, volume, now, end, timestamp) {
     const order = Object.create(null)
     order.currency = currency
@@ -53,10 +38,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
             'name': callback.symbol.replace('USDT', ''),
             'price': callback.bestAsk
         })
-        db.run("INSERT INTO prices(name, price) VALUES (?, ?)", [
-            callback.symbol.replace('USDT', ''),
-            callback.bestAsk
-        ]);
     }
 });
 
