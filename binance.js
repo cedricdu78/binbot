@@ -97,9 +97,10 @@ binance.websockets.bookTickers(undefined, (callback) => {
                     // detail.max = max
                     // detail.prc = Number(prc.toFixed(0))
                     // detail.prcm = Number(prcm.toFixed(0))
-                    // detail.bm = Number((moy * (100 - b_median) / 100).toFixed(3))
-                    // detail.am = Number((moy * (100 - a_median) / 100).toFixed(3))
+                    // detail.bm = Number((moy * (100 - b_median) / 100).toFixed(6))
+                    // detail.am = Number((moy * (100 - a_median) / 100).toFixed(6))
                     // detail.amprice = ((value.price - (moy * (100 - a_median) / 100)) / (moy * (100 - a_median) / 100)) * 100
+                    // if (detail.am >= value.price ) details.push(detail)
 
                     if (moy * (100 - b_median) / 100 <= value.price &&
                         moy * (100 - a_median) / 100 >= value.price &&
@@ -109,10 +110,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         let minVolume = (info.filter(val => val['filterType'] === 'LOT_SIZE'))[0]
                         let minPrice = (info.filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
 
-                        let lenVol = Number(minVolume.minQty).toString().split('.')[1].length
+                        let lenVol = Number(minVolume.minQty).toString().split('.')
+                        lenVol = lenVol.length > 0 ? lenVol[1].length : 0
                         let volume = Number((mise / value.price).toFixed(lenVol))
 
-                        let lenPrice = Number(minPrice.minPrice).toString().split('.')[1].length
+                        let lenPrice = Number(minPrice.minPrice).toString().split('.')
+                        lenPrice = lenPrice.length > 0 ? lenPrice[1].length : 0
                         let price = Number(((Number(value.price) * profit / 100) + Number(value.price)).toFixed(lenPrice))
 
                         await binance.marketBuy(value.symbol, volume, (error,) => {
