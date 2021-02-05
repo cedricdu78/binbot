@@ -9,9 +9,9 @@ const binance = new Binance().options({
 function order(currency, volume, now, end, timestamp) {
     const order = Object.create(null)
     order.currency = currency
-    order.volume = volume
-    order.now = now
-    order.end = end
+    order.volume = Number(volume)
+    order.now = Number(now)
+    order.end = Number(end)
     order.date = new Date(timestamp).toLocaleString('fr-FR')
     order.success = (100 * now / end).toFixed(2)
     return order
