@@ -20,7 +20,7 @@ function order(currency, volume, now, end, timestamp) {
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = '15m', limit = 673,
     a_median = 0, b_median = 20,
-    mise = 40, profit = 10,
+    mise = 60, profit = 10,
     keep_balance = 0
 
 let tickers = []
