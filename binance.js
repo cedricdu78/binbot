@@ -149,7 +149,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 }
             }
 
-            if (details.length > 0) console.table(details.slice(0, 14).sort((a, b) => b.amprice - a.amprice))
+            if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14))
             if (orders.length > 0) console.table(orders.sort((a, b) => b.success - a.success))
             if (new_orders.length > 0) console.table(new_orders)
             console.table({
