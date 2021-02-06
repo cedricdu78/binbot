@@ -6,6 +6,25 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
+const sqlite3 = require('sqlite3').verbose();
+let db = new sqlite3.Database('./binance.db', (err) => {
+    if (err) {
+        console.error(err.message);
+    }
+    db.run(`
+    CREATE TABLE IF NOT EXISTS 
+        transactions(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            currency TEXT,
+            volume FLOAT,
+            price_now FLOAT,
+            price_end FLOAT,
+            date_t TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            mise FLOAT,
+            balance FLOAT,
+            total FLOAT)`);
+});
+
 function order(currency, volume, now, end, timestamp) {
     const order = Object.create(null)
     order.currency = currency
@@ -131,7 +150,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                             console.log(base + " [" + responseJson.code + "]: " + responseJson["msg"])
                                         } else {
                                             new_orders.push(order(
-                                                value.name,
+                                                value.symbol,
                                                 volume,
                                                 value.price,
                                                 price,
@@ -147,6 +166,21 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 } catch (err) {
                     console.error(value.name + " = { " + err + " }")
                 }
+            }
+
+            if (new_orders.length > 0) {
+                let sql = `INSERT INTO transactions (
+                          currency, volume, price_now, price_end, mise, balance, total
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+
+                Object.entries(new_orders).forEach(([key, value]) => {
+                    db.run(sql, [
+                        value.currency, value.volume, value.now, value.end, mise,
+                        Number(Number(balances["USDT"].available).toFixed(2)),
+                        Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))], function (err,) {
+                        if (err) throw err;
+                    })
+                })
             }
 
             if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())

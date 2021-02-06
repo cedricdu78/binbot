@@ -3,3 +3,4 @@ kraken_api.iml
 package-lock.json
 node_modules
 secrets.js
+binance.db
