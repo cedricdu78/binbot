@@ -187,7 +187,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                                 INSERT INTO binances.transactions (
                                                     currency, volume, price_now, price_end, mise, balance, total
                                                 ) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
-                                                    value.currency, value.volume, value.now, value.end, mise,
+                                                    value.symbol, volume, value.price, price, mise,
                                                     Number(Number(balances["USDT"].available).toFixed(2)),
                                                     Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
                                                 ]
