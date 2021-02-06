@@ -181,11 +181,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         if (err) throw err;
                     })
                 })
+
+                console.table(new_orders)
             }
 
             if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
             if (orders.length > 0) console.table(orders.sort((a, b) => b.success - a.success))
-            if (new_orders.length > 0) console.table(new_orders)
             console.table({
                 'Balance': {
                     'Available': Number(Number(balances["USDT"].available).toFixed(2)),
