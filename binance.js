@@ -37,7 +37,7 @@ function order(currency, volume, now, end, timestamp) {
 }
 
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
-    interval = '15m', limit = 673,
+    interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
     mise = 60, profit = 10,
     keep_balance = 0
@@ -173,7 +173,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                           currency, volume, price_now, price_end, mise, balance, total
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-                Object.entries(new_orders).forEach(([key, value]) => {
+                Object.entries(new_orders).forEach(([, value]) => {
                     db.run(sql, [
                         value.currency, value.volume, value.now, value.end, mise,
                         Number(Number(balances["USDT"].available).toFixed(2)),
