@@ -19,7 +19,7 @@ db.then(conn => {
         CREATE TABLE IF NOT EXISTS
         binances.transactions(
             id INT AUTO_INCREMENT PRIMARY KEY,
-            currency VARCHAR(10),
+            currency VARCHAR(20),
             volume FLOAT,
             price_now FLOAT,
             price_end FLOAT,
@@ -28,7 +28,7 @@ db.then(conn => {
             balance FLOAT,
             total FLOAT
         );
-    `);
+    `).then();
 
     conn.query(`
     CREATE TABLE IF NOT EXISTS
@@ -36,8 +36,8 @@ db.then(conn => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         currency VARCHAR(10),
         prices FLOAT,
-        date_t TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-    `);
+        date_t DATETIME);
+    `).then();
 })
 
 function order(currency, volume, now, end, timestamp) {
@@ -75,14 +75,15 @@ binance.websockets.bookTickers(undefined, (callback) => {
             })
         }
 
-        if ((new Date()).getSeconds() === 0)
-            db.then(conn => {
-                conn.query(`
-                    INSERT INTO binances.histories (
-                        currency, prices
-                    ) VALUES (?, ?)
-                `, [callback.symbol, callback.bestAsk]);
-            })
+        let date_c = new Date()
+        let date_now = date_c.getFullYear() + "-"
+            + (String(date_c.getUTCMonth()).length === 1 ? ("0" + (date_c.getMonth() + 1)) : (date_c.getMonth() + 1)) + "-"
+            + (String(date_c.getDate()).length === 1 ? ("0" + date_c.getDate()) : date_c.getDate()) + " "
+            + (String(date_c.getHours()).length === 1 ? ("0" + date_c.getHours()) : date_c.getHours()) + "-"
+            + (String(date_c.getMinutes()).length === 1 ? ("0" + date_c.getMinutes()) : date_c.getMinutes()) + ":00"
+        db.then(conn => {
+            conn.query(`CALL binances.setHistory(?, ?, ?)`, [callback.symbol, callback.bestAsk, date_now]).then();
+        })
     }
 });
 
@@ -131,21 +132,23 @@ binance.websockets.bookTickers(undefined, (callback) => {
                     let min = Math.min.apply(null, moy)
                     let max = Math.max.apply(null, moy)
                     moy = average(moy)
-                    let prc = ((max - min) / min) * 100
                     let prcm = ((max - moy) / moy) * 100
+                    let prc = ((max - min) / min) * 100
 
-                    const detail = Object.create(null)
-                    detail.currency = value.name
-                    detail.price = value.price
-                    detail.min = min
-                    detail.moy = Number(moy.toFixed(3))
-                    detail.max = max
-                    detail.prc = Number(prc.toFixed(0))
-                    detail.prcm = Number(prcm.toFixed(0))
-                    detail.bm = Number((moy * (100 - b_median) / 100).toFixed(6))
-                    detail.am = Number((moy * (100 - a_median) / 100).toFixed(6))
-                    detail.amprice = ((value.price - (moy * (100 - a_median) / 100)) / (moy * (100 - a_median) / 100)) * 100
-                    if (prc >= 10 && prcm >= 10) details.push(detail)
+                    if (prc >= 10 && prcm >= 10) {
+                        const detail = Object.create(null)
+                        detail.currency = value.name
+                        detail.price = value.price
+                        detail.min = min
+                        detail.moy = Number(moy.toFixed(3))
+                        detail.max = max
+                        detail.prc = Number(prc.toFixed(0))
+                        detail.prcm = Number(prcm.toFixed(0))
+                        detail.bm = Number((moy * (100 - b_median) / 100).toFixed(6))
+                        detail.am = Number((moy * (100 - a_median) / 100).toFixed(6))
+                        detail.amprice = ((value.price - (moy * (100 - a_median) / 100)) / (moy * (100 - a_median) / 100)) * 100
+                        details.push(detail)
+                    }
 
                     if (moy * (100 - b_median) / 100 <= value.price &&
                         moy * (100 - a_median) / 100 >= value.price &&
