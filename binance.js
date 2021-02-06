@@ -6,24 +6,39 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
-const sqlite3 = require('sqlite3').verbose();
-let db = new sqlite3.Database('./binance.db', (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-    db.run(`
-    CREATE TABLE IF NOT EXISTS 
-        transactions(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            currency TEXT,
+const mariadb = require('mariadb');
+const db = mariadb.createConnection({
+    host: secrets.mysql_host(),
+    user: secrets.mysql_user(),
+    password: secrets.mysql_password(),
+    connectionLimit: 5
+})
+
+db.then(conn => {
+    conn.query(`
+        CREATE TABLE IF NOT EXISTS
+        binances.transactions(
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            currency VARCHAR(10),
             volume FLOAT,
             price_now FLOAT,
             price_end FLOAT,
             date_t TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             mise FLOAT,
             balance FLOAT,
-            total FLOAT)`);
-});
+            total FLOAT
+        );
+    `);
+
+    conn.query(`
+    CREATE TABLE IF NOT EXISTS
+    binances.histories(
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        currency VARCHAR(10),
+        prices FLOAT,
+        date_t TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+    `);
+})
 
 function order(currency, volume, now, end, timestamp) {
     const order = Object.create(null)
@@ -52,11 +67,22 @@ binance.websockets.bookTickers(undefined, (callback) => {
         && Number(callback.bestAsk) > 0) {
         let ticker = (tickers.filter(item => item.symbol === callback.symbol))[0]
         if (ticker !== undefined) ticker.price = callback.bestAsk
-        else tickers.push({
-            'symbol': callback.symbol,
-            'name': callback.symbol.replace('USDT', ''),
-            'price': callback.bestAsk
-        })
+        else {
+            tickers.push({
+                'symbol': callback.symbol,
+                'name': callback.symbol.replace('USDT', ''),
+                'price': callback.bestAsk
+            })
+        }
+
+        if ((new Date()).getSeconds() === 0)
+            db.then(conn => {
+                conn.query(`
+                    INSERT INTO binances.histories (
+                        currency, prices
+                    ) VALUES (?, ?)
+                `, [callback.symbol, callback.bestAsk]);
+            })
     }
 });
 
@@ -156,6 +182,17 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                             Date.now()
                                         ))
                                         total += mise
+                                        db.then(conn => {
+                                            conn.query(`
+                                                INSERT INTO binances.transactions (
+                                                    currency, volume, price_now, price_end, mise, balance, total
+                                                ) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
+                                                    value.currency, value.volume, value.now, value.end, mise,
+                                                    Number(Number(balances["USDT"].available).toFixed(2)),
+                                                    Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
+                                                ]
+                                            );
+                                        })
                                     }
                                 })
                             }
@@ -166,23 +203,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
 
             if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
             if (orders.length > 0) console.table(orders.sort((a, b) => b.success - a.success))
-            if (new_orders.length > 0) {
-                let sql = `INSERT INTO transactions (
-                          currency, volume, price_now, price_end, mise, balance, total
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)`
-
-                Object.entries(new_orders).forEach(([, value]) => {
-                    db.run(sql, [
-                        value.currency, value.volume, value.now, value.end, mise,
-                        Number(Number(balances["USDT"].available).toFixed(2)),
-                        Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))], function (err,) {
-                        if (err) throw err;
-                    })
-                })
-
-                console.table(new_orders)
-            }
-
+            if (new_orders.length > 0) console.table(new_orders)
             console.table({
                 'Balance': {
                     'Available': Number(Number(balances["USDT"].available).toFixed(2)),
