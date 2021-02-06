@@ -16,6 +16,10 @@ const db = mariadb.createConnection({
 
 db.then(conn => {
     conn.query(`
+        CREATE DATABASE IF NOT EXISTS binances;
+    `).then();
+
+    conn.query(`
         CREATE TABLE IF NOT EXISTS
         binances.transactions(
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -31,14 +35,43 @@ db.then(conn => {
     `).then();
 
     conn.query(`
-    CREATE TABLE IF NOT EXISTS
-    binances.histories(
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        currency VARCHAR(10),
-        prices FLOAT,
-        date_t DATETIME);
+        CREATE TABLE IF NOT EXISTS
+        binances.histories(
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            currency VARCHAR(10),
+            prices FLOAT,
+            date_t DATETIME
+        );
+    `).then();
+
+    conn.query(`
+        DROP PROCEDURE IF EXISTS binances.setHistory;
+    `).then();
+
+    conn.query(`
+        CREATE PROCEDURE binances.setHistory(IN currency_name varchar(20), IN price float, IN date_c datetime)
+        BEGIN
+            DECLARE result INT DEFAULT 0;
+        
+            SET result := (SELECT count(*) FROM binances.histories WHERE currency = currency_name AND date_t = date_c);
+        
+            IF (result = 0) THEN
+                INSERT INTO binances.histories (
+                    currency, prices, date_t
+                ) VALUES (currency_name, price, date_c);
+            END IF;
+        END;
     `).then();
 })
+
+function getDate(date = new Date()) {
+    return date.getFullYear() + "-"
+        + (String(date.getUTCMonth()).length === 1 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)) + "-"
+        + (String(date.getDate()).length === 1 ? ("0" + date.getDate()) : date.getDate()) + " "
+        + (String(date.getHours()).length === 1 ? ("0" + date.getHours()) : date.getHours()) + "-"
+        + (String(date.getMinutes()).length === 1 ? ("0" + date.getMinutes()) : date.getMinutes()) + "-"
+        + (String(date.getSeconds()).length === 1 ? ("0" + date.getSeconds()) : date.getSeconds())
+}
 
 function order(currency, volume, now, end, timestamp) {
     const order = Object.create(null)
@@ -46,7 +79,7 @@ function order(currency, volume, now, end, timestamp) {
     order.volume = Number(volume)
     order.now = Number(now)
     order.end = Number(end)
-    order.date = new Date(timestamp).toLocaleString('fr-FR')
+    order.date = getDate(new Date(timestamp))
     order.success = Number((100 * now / end).toFixed(2))
     return order
 }
@@ -75,14 +108,10 @@ binance.websockets.bookTickers(undefined, (callback) => {
             })
         }
 
-        let date_c = new Date()
-        let date_now = date_c.getFullYear() + "-"
-            + (String(date_c.getUTCMonth()).length === 1 ? ("0" + (date_c.getMonth() + 1)) : (date_c.getMonth() + 1)) + "-"
-            + (String(date_c.getDate()).length === 1 ? ("0" + date_c.getDate()) : date_c.getDate()) + " "
-            + (String(date_c.getHours()).length === 1 ? ("0" + date_c.getHours()) : date_c.getHours()) + "-"
-            + (String(date_c.getMinutes()).length === 1 ? ("0" + date_c.getMinutes()) : date_c.getMinutes()) + ":00"
+        let date_now = new Date()
+        date_now.setSeconds(0)
         db.then(conn => {
-            conn.query(`CALL binances.setHistory(?, ?, ?)`, [callback.symbol, callback.bestAsk, date_now]).then();
+            conn.query(`CALL binances.setHistory(?, ?, ?)`, [callback.symbol, callback.bestAsk, getDate(date_now)]).then();
         })
     }
 });
