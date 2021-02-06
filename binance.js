@@ -101,7 +101,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         detail.bm = Number((moy * (100 - b_median) / 100).toFixed(6))
                         detail.am = Number((moy * (100 - a_median) / 100).toFixed(6))
                         detail.amprice = ((value.price - (moy * (100 - a_median) / 100)) / (moy * (100 - a_median) / 100)) * 100
-                        if (detail.am >= value.price ) details.push(detail)
+                        if (prc >= 10 && prcm >= 10) details.push(detail)
 
                         if (moy * (100 - b_median) / 100 <= value.price &&
                             moy * (100 - a_median) / 100 >= value.price &&
@@ -149,7 +149,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 }
             }
 
-            if (details.length > 0) console.table(details.slice(0,14).sort((a, b) => b.amprice - a.amprice))
+            if (details.length > 0) console.table(details.slice(0, 14).sort((a, b) => b.amprice - a.amprice))
             if (orders.length > 0) console.table(orders.sort((a, b) => b.success - a.success))
             if (new_orders.length > 0) console.table(new_orders)
             console.table({
