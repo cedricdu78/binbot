@@ -39,7 +39,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
         && !callback.symbol.endsWith('DOWNUSDT')
         && !callback.symbol.endsWith('UPUSDT')
         && !callback.symbol.startsWith('USDT')
-        && !callback.symbol.startsWith('BNB')
         && Number(callback.bestAsk) > 0) {
         let ticker = (tickers.filter(item => item.symbol === callback.symbol))[0]
         if (ticker !== undefined) ticker.price = callback.bestAsk
@@ -69,7 +68,8 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let balances = [] && await binance.balance(null)
 
             for (const [, value] of Object.entries(tickers)) {
-                if (balances[value.name].available * value.price >= 1)
+                if (balances[value.name].available * value.price >= 1
+                    && value.name !== 'BNB')
                     console.log(value.name + ' has units out of order: '
                         + (balances[value.name].available * value.price) + '$')
 
@@ -82,7 +82,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         _order.price,
                         _order['time']
                     ))
-                    total += value.price * _order['origQty']
                 }
 
                 if (Number(balances[value.name].onOrder) === 0
@@ -161,6 +160,9 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         })
                     }
                 }
+
+                total += value.price * Number(balances[value.name].available)
+                total += value.price * Number(balances[value.name].onOrder)
             }
 
             if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
