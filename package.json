@@ -12,9 +12,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "kraken-api": "^1.0.1",
-    "mariadb": "^2.5.2",
-    "node-binance-api": "^0.12.4",
-    "sqlite3": "^5.0.1"
+    "node-binance-api": "^0.12.4"
   },
   "devDependencies": {
     "socket.io": "^3.1.0"
