@@ -7,61 +7,79 @@ const binance = new Binance().options({
 });
 
 const mariadb = require('mariadb');
-const db = mariadb.createConnection({
+const pool = mariadb.createPool({
     host: secrets.mysql_host(),
     user: secrets.mysql_user(),
     password: secrets.mysql_password(),
     connectionLimit: 5
 })
 
-db.then(conn => {
-    conn.query(`
-        CREATE DATABASE IF NOT EXISTS binances;
-    `).then();
+pool.getConnection()
+    .then(conn => {
+        conn.query(`CREATE DATABASE IF NOT EXISTS binances;`)
+            .then(() => {
+                return conn.query(`
+                    CREATE TABLE IF NOT EXISTS
+                    binances.transactions(
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        currency VARCHAR(20),
+                        volume FLOAT,
+                        price_now FLOAT,
+                        price_end FLOAT,
+                        date_t TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        mise FLOAT,
+                        balance FLOAT,
+                        total FLOAT
+                    );
+                `).then(() => {
+                    conn.end()
+                }).catch(err => {
+                    console.log(err)
+                    conn.end().then();
+                })
+            }).catch(err => {
+                console.log(err)
+            });
 
-    conn.query(`
-        CREATE TABLE IF NOT EXISTS
-        binances.transactions(
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            currency VARCHAR(20),
-            volume FLOAT,
-            price_now FLOAT,
-            price_end FLOAT,
-            date_t TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            mise FLOAT,
-            balance FLOAT,
-            total FLOAT
-        );
-    `).then();
+        conn.query(`
+            CREATE TABLE IF NOT EXISTS
+            binances.histories(
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                currency VARCHAR(10),
+                prices FLOAT,
+                date_t DATETIME
+            );
+        `).then(() => {
+            conn.end().then();
+        }).catch(err => {
+            console.log(err)
+            conn.end().then();
+        })
 
-    conn.query(`
-        CREATE TABLE IF NOT EXISTS
-        binances.histories(
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            currency VARCHAR(10),
-            prices FLOAT,
-            date_t DATETIME
-        );
-    `).then();
-
-    conn.query(`
-        DROP PROCEDURE IF EXISTS binances.setHistory;
-    `).then();
-
-    conn.query(`
-        CREATE PROCEDURE binances.setHistory(IN currency_name varchar(20), IN price float, IN date_c datetime)
-        BEGIN
-            DECLARE result INT DEFAULT 0;
-        
-            SET result := (SELECT count(*) FROM binances.histories WHERE currency = currency_name AND date_t = date_c);
-        
-            IF (result = 0) THEN
-                INSERT INTO binances.histories (
-                    currency, prices, date_t
-                ) VALUES (currency_name, price, date_c);
-            END IF;
-        END;
-    `).then();
+        conn.query(`DROP PROCEDURE IF EXISTS binances.setHistory;`)
+            .then(() => {
+                return conn.query(`
+                    CREATE PROCEDURE binances.setHistory(IN currency_name varchar(20), IN price float, IN date_c datetime)
+                    BEGIN
+                        DECLARE result INT DEFAULT 0;
+                    
+                        SET result := (SELECT count(*) FROM binances.histories WHERE currency = currency_name AND date_t = date_c);
+                    
+                        IF (result = 0) THEN
+                            INSERT INTO binances.histories (
+                                currency, prices, date_t
+                            ) VALUES (currency_name, price, date_c);
+                        END IF;
+                    END;
+                `).then(() => {
+                    conn.end().then();
+                }).catch(err => {
+                    console.log(err)
+                    conn.end().then();
+                })
+            }).catch(err => {
+            console.log(err)
+        });
 })
 
 function getDate(date = new Date()) {
@@ -91,30 +109,41 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     keep_balance = 0
 
 let tickers = []
-binance.websockets.bookTickers(undefined, (callback) => {
-    if (callback.symbol.endsWith('USDT')
-        && !callback.symbol.endsWith('DOWNUSDT')
-        && !callback.symbol.endsWith('UPUSDT')
-        && !callback.symbol.startsWith('USDT')
-        && !callback.symbol.startsWith('BNB')
-        && Number(callback.bestAsk) > 0) {
-        let ticker = (tickers.filter(item => item.symbol === callback.symbol))[0]
-        if (ticker !== undefined) ticker.price = callback.bestAsk
-        else {
-            tickers.push({
-                'symbol': callback.symbol,
-                'name': callback.symbol.replace('USDT', ''),
-                'price': callback.bestAsk
-            })
-        }
 
-        let date_now = new Date()
-        date_now.setSeconds(0)
-        db.then(conn => {
-            conn.query(`CALL binances.setHistory(?, ?, ?)`, [callback.symbol, callback.bestAsk, getDate(date_now)]).then();
-        })
-    }
-});
+pool.getConnection()
+    .then(conn => {
+
+        binance.websockets.bookTickers(undefined, (callback) => {
+            if (callback.symbol.endsWith('USDT')
+                && !callback.symbol.endsWith('DOWNUSDT')
+                && !callback.symbol.endsWith('UPUSDT')
+                && !callback.symbol.startsWith('USDT')
+                && !callback.symbol.startsWith('BNB')
+                && Number(callback.bestAsk) > 0) {
+                let ticker = (tickers.filter(item => item.symbol === callback.symbol))[0]
+                if (ticker !== undefined) ticker.price = callback.bestAsk
+                else {
+                    tickers.push({
+                        'symbol': callback.symbol,
+                        'name': callback.symbol.replace('USDT', ''),
+                        'price': callback.bestAsk
+                    })
+                }
+
+                let date_now = new Date()
+                date_now.setSeconds(0)
+                conn.query(`CALL binances.setHistory(?, ?, ?)`, [callback.symbol, callback.bestAsk, getDate(date_now)])
+                    .then(() => {
+                        conn.end().then();
+                    }).catch(err => {
+                    console.log(err)
+                    conn.end().then();
+                })
+            }
+        });
+    });
+
+
 
 (async () => {
 
@@ -214,17 +243,21 @@ binance.websockets.bookTickers(undefined, (callback) => {
                                             Date.now()
                                         ))
                                         total += mise
-                                        db.then(conn => {
-                                            conn.query(`
-                                                INSERT INTO binances.transactions (
+                                        pool.getConnection()
+                                            .then(conn => {
+                                                conn.query(`INSERT INTO binances.transactions (
                                                     currency, volume, price_now, price_end, mise, balance, total
                                                 ) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
                                                     value.symbol, volume, value.price, price, mise,
                                                     Number(Number(balances["USDT"].available).toFixed(2)),
                                                     Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
-                                                ]
-                                            );
-                                        })
+                                                ]).then(() => {
+                                                    conn.end().then();
+                                                }).catch(err => {
+                                                    console.log(err)
+                                                    conn.end().then();
+                                                })
+                                            })
                                     }
                                 })
                             }
