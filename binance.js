@@ -129,7 +129,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         lenPrice = lenPrice.length > 1 ? lenPrice[1].length : 0
                         let price = Number(((Number(value.price) * profit / 100) + Number(value.price)).toFixed(lenPrice))
 
-                        await binance.marketBuy(value.symbol, quantity, (error,) => {
+                        await binance.marketBuy(value.symbol, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
                                 console.log(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
