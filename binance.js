@@ -126,23 +126,27 @@ binance.websockets.bookTickers(undefined, (callback) => {
 
                         let lenVol = Number(minVolume.minQty).toString().split('.')
                         lenVol = lenVol.length > 1 ? lenVol[1].length : 0
-                        let volume = Number((mise / value.price).toFixed(lenVol))
+                        let volume = String(mise / value.price)
+                        volume = volume.substr(0, volume.split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
 
                         let lenPrice = Number(minPrice.minPrice).toString().split('.')
                         lenPrice = lenPrice.length > 1 ? lenPrice[1].length : 0
-                        let price = Number(((Number(value.price) * profit / 100) + Number(value.price)).toFixed(lenPrice))
+                        let price = String((Number(value.price) * profit / 100) + Number(value.price))
+                        price = price.substr(0, price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
 
                         await binance.marketBuy(value.symbol, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
                                 console.log(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
                             } else {
+                                console.log(value.symbol + " buy")
                                 balances["USDT"].available -= mise
                                 binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
                                         console.log(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
                                     } else {
+                                        console.log(value.symbol + " sell")
                                         new_orders.push(order(
                                             value.symbol,
                                             volume,
