@@ -227,13 +227,13 @@ pool.getConnection()
                         await binance.marketBuy(value.symbol, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
-                                console.log(base + " [" + responseJson.code + "]: " + responseJson["msg"])
+                                console.log(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
                             } else {
                                 balances["USDT"].available -= mise
                                 binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
-                                        console.log(base + " [" + responseJson.code + "]: " + responseJson["msg"])
+                                        console.log(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
                                     } else {
                                         new_orders.push(order(
                                             value.symbol,
