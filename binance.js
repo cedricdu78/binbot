@@ -33,6 +33,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     keep_balance = 0
 
 let tickers = []
+
 binance.websockets.bookTickers(undefined, (callback) => {
     if (callback.symbol.endsWith('USDT')
         && !callback.symbol.endsWith('DOWNUSDT')
@@ -68,11 +69,11 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let balances = [] && await binance.balance(null)
 
             for (const [, value] of Object.entries(tickers)) {
-                if (balances[value.name].available > 0 && value.name === "1INCH")
+                if (balances[value.name].available > 0)
                     console.log(value.name + ' has units out of order: '
                         + (balances[value.name].available * value.price) + '$')
 
-                if (balances[value.name].onOrder > 0 && value.name === "1INCH") {
+                if (balances[value.name].onOrder > 0) {
                     let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
                     orders.push(order(
                         value.symbol,
@@ -84,7 +85,9 @@ binance.websockets.bookTickers(undefined, (callback) => {
                     total += value.price * _order['origQty']
                 }
 
-                if (Number(balances["USDT"].available) >= (keep_balance + mise) && value.name === "1INCH") {
+                if (Number(balances[value.name].onOrder) === 0
+                    && Number(balances[value.name].available) === 0
+                    && Number(balances["USDT"].available) >= (keep_balance + mise)) {
                     let moy = []
                     let res = await binance.candlesticks(value.symbol, interval, null, {limit: limit})
                     Object.entries(res).forEach(([, value]) => {
