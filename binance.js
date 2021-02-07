@@ -69,7 +69,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let balances = [] && await binance.balance(null)
 
             for (const [, value] of Object.entries(tickers)) {
-                if (balances[value.name].available > 0)
+                if (balances[value.name].available * value.price >= 1)
                     console.log(value.name + ' has units out of order: '
                         + (balances[value.name].available * value.price) + '$')
 
