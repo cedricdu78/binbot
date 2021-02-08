@@ -11,7 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
+    "fast-csv": "^4.3.6",
     "kraken-api": "^1.0.1",
+    "n-readlines": "^1.0.1",
     "node-binance-api": "^0.12.4"
   },
   "devDependencies": {

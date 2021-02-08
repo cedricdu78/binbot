@@ -6,6 +6,9 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
+const fs = require('fs');
+const lineByLine = require('n-readlines');
+
 function getDate(date = new Date()) {
     return date.getFullYear() + "-"
         + (String(date.getUTCMonth()).length === 1 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)) + "-"
@@ -48,6 +51,41 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 'name': callback.symbol.replace('USDT', ''),
                 'price': callback.bestAsk
             })
+        }
+
+        let date_c = new Date()
+        date_c.setSeconds(0)
+        let date = getDate(date_c)
+        let obj = {
+            'symbol': callback.symbol,
+            'price': callback.bestAsk,
+            'date': date
+        }
+
+        if (fs.existsSync("./histories/" + callback.symbol + ".txt")) {
+            let already = true;
+            let liner = new lineByLine("./histories/" + callback.symbol + ".txt");
+            let line;
+            while (line = liner.next()) {
+                let data =  JSON.parse(line)
+                if (data.date === date) already = false
+            }
+
+            if (already) {
+                fs.writeFile("./histories/" + callback.symbol + ".txt",
+                    JSON.stringify(obj) + "\r\n",
+                    { flag: 'a' },
+                    function (err) {
+                        if (err) return console.log(err);
+                    });
+            }
+        } else {
+            fs.writeFile("./histories/" + callback.symbol + ".txt",
+                JSON.stringify(obj) + "\r\n",
+                { flag: 'a' },
+                function (err) {
+                    if (err) return console.log(err);
+                });
         }
     }
 });
