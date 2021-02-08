@@ -33,7 +33,6 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     keep_balance = 0
 
 let tickers = []
-
 binance.websockets.bookTickers(undefined, (callback) => {
     if (callback.symbol.endsWith('USDT')
         && !callback.symbol.endsWith('DOWNUSDT')
