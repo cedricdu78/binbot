@@ -58,6 +58,13 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
             let balances = [] && await binance.balance(null)
 
             for (const [key, value] of Object.entries(bookTickers)) {
+                let moy = []
+                let res = await binance.candlesticks(key, interval, null, {limit: limit})
+                Object.entries(res).forEach(([, value]) => {
+                    moy.push(Number(value[4]))
+                })
+                value.ask = Number(res[Object.entries(res).length - 1][4])
+
                 if (balances[value.name].available * value.ask >= 1
                     && value.name !== 'BNB')
                     console.log(key + ' has units out of order: '
@@ -77,13 +84,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                 if (Number(balances[value.name].onOrder) === 0
                     && Number(balances[value.name].available) === 0
                     && Number(balances["USDT"].available) >= (keep_balance + mise)) {
-                    let moy = []
-                    let res = await binance.candlesticks(key, interval, null, {limit: limit})
-                    Object.entries(res).forEach(([, value]) => {
-                        moy.push(Number(value[4]))
-                    })
 
-                    value.ask = Number(res[Object.entries(res).length - 1][4])
                     let min = Math.min.apply(null, moy)
                     let max = Math.max.apply(null, moy)
                     moy = average(moy)
