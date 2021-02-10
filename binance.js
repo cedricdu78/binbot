@@ -134,7 +134,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
                                         _order['origQty'] = _order['origQty'].substr(0, _order['origQty'].split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
 
-                                        binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error, response) => {
+                                        binance.sell(value.symbol, _order['origQty'], _order.price, {type: 'LIMIT'}, (error, response) => {
                                             if (error !== null) {
                                                 let responseJson = JSON.parse(error.body)
                                                 console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
@@ -156,6 +156,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                         })
                                     }
                                 }
+                                conn.end().then();
                                 orders.push(order(
                                     value.symbol,
                                     _order['origQty'],
@@ -163,7 +164,6 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                     _order.price,
                                     _order['time']
                                 ))
-                                conn.end().then();
                             }).catch(err => {
                                 conn.end().then();
                                 console.log(err)
