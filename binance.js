@@ -111,7 +111,6 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
                 if (balances[value['baseAsset']].onOrder > 0) {
                     let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
-                    console.log(_order)
 
                     pool.getConnection()
                         .then(conn => {
@@ -122,6 +121,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
                                     if (value.ask >= res[0]['price'] * 110 / 100
                                         && value.ask >= res[0]['price'] * res[0]['prc'] / 100) {
+                                        console.log(_order)
 
                                         let cancel = binance.cancel(value.symbol, _order.orderId)
                                         console.log(cancel)
