@@ -33,47 +33,45 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     keep_balance = 0;
 
 (async () => {
-
-    let bookTickers = await binance.bookTickers(undefined, null)
-    Object.entries(bookTickers).forEach(([key, value]) => {
-        if (!key.endsWith('USDT')
-            || key.endsWith('DOWNUSDT')
-            || key.endsWith('UPUSDT')
-            || Number(value.ask) <= 0) {
-            delete bookTickers[key]
-        } else value.name = key.replace('USDT', '')
-    })
-
-    let infos = [] && (await binance.exchangeInfo(null))["symbols"]
-
     while (1) {
-
         try {
             let orders = []
             let new_orders = []
             let total = 0
             let details = []
 
+            let infos = [] && (await binance.exchangeInfo(null))["symbols"]
+            Object.entries(infos).forEach(([key, value]) => {
+                if (!value.symbol.endsWith('USDT')
+                    || value.symbol.endsWith('DOWNUSDT')
+                    || value.symbol.endsWith('UPUSDT')
+                    || value.symbol.endsWith('BULLUSDT')
+                    || value.symbol.endsWith('BEARUSDT')
+                    || value.status === 'BREAK') {
+                    delete infos[key]
+                }
+            })
+
             let currencies_open = [] && await binance.openOrders(undefined, null)
             let balances = [] && await binance.balance(null)
 
-            for (const [key, value] of Object.entries(bookTickers)) {
+            for (const [, value] of Object.entries(infos)) {
                 let moy = []
-                let res = await binance.candlesticks(key, interval, null, {limit: limit})
+                let res = await binance.candlesticks(value.symbol, interval, null, {limit: limit})
                 Object.entries(res).forEach(([, value]) => {
                     moy.push(Number(value[4]))
                 })
                 value.ask = Number(res[Object.entries(res).length - 1][4])
 
-                if (balances[value.name].available * value.ask >= 1
-                    && value.name !== 'BNB')
-                    console.log(key + ' has units out of order: '
-                        + (balances[value.name].available * value.ask) + '$')
+                if (balances[value['baseAsset']].available * value.ask >= 1
+                    && value['baseAsset'] !== 'BNB')
+                    console.log(value.symbol + ' has units out of order: '
+                        + (balances[value['baseAsset']].available * value.ask) + '$')
 
-                if (balances[value.name].onOrder > 0) {
-                    let _order = (currencies_open.filter(val => val.symbol === key))[0]
+                if (balances[value['baseAsset']].onOrder > 0) {
+                    let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
                     orders.push(order(
-                        key,
+                        value.symbol,
                         _order['origQty'],
                         value.ask,
                         _order.price,
@@ -81,8 +79,8 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                     ))
                 }
 
-                if (Number(balances[value.name].onOrder) === 0
-                    && Number(balances[value.name].available) === 0
+                if (Number(balances[value['baseAsset']].onOrder) === 0
+                    && Number(balances[value['baseAsset']].available) === 0
                     && Number(balances["USDT"].available) >= (keep_balance + mise)) {
 
                     let min = Math.min.apply(null, moy)
@@ -93,7 +91,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
                     if (prc >= 10 && prcm >= 10) {
                         const detail = Object.create(null)
-                        detail.currency = key
+                        detail.currency = value.symbol
                         detail.price = value.ask
                         detail.min = min
                         detail.moy = Number(moy.toFixed(3))
@@ -110,7 +108,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                         moy * (100 - a_median) / 100 >= value.ask &&
                         value.ask > 0 && prc >= 10 && prcm >= 10) {
 
-                        let info = (infos.filter(val => val.symbol === key))[0]['filters']
+                        let info = (infos.filter(val => val.symbol === value.symbol))[0]['filters']
                         let minVolume = (info.filter(val => val['filterType'] === 'LOT_SIZE'))[0]
                         let minPrice = (info.filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
 
@@ -124,21 +122,21 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                         let price = String((Number(value.ask) * profit / 100) + Number(value.ask))
                         price = price.substr(0, price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
 
-                        await binance.marketBuy(key, volume, (error,) => {
+                        await binance.marketBuy(value.symbol, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
-                                console.error(key + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
+                                console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
                             } else {
-                                console.log(key + " buy")
+                                console.log(value.symbol + " buy")
                                 balances["USDT"].available -= mise
-                                binance.sell(key, volume, price, {type: 'LIMIT'}, (error,) => {
+                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
-                                        console.error(key + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
+                                        console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
                                     } else {
-                                        console.log(key + " sell")
+                                        console.log(value.symbol + " sell")
                                         new_orders.push(order(
-                                            key,
+                                            value.symbol,
                                             volume,
                                             value.ask,
                                             price,
@@ -152,8 +150,8 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                     }
                 }
 
-                total += value.ask * Number(balances[value.name].available)
-                total += value.ask * Number(balances[value.name].onOrder)
+                total += value.ask * Number(balances[value['baseAsset']].available)
+                total += value.ask * Number(balances[value['baseAsset']].onOrder)
             }
 
             if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
