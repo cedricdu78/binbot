@@ -30,28 +30,20 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
     mise = 60, profit = 10,
-    keep_balance = 0
-
-let tickers = []
-binance.websockets.bookTickers(undefined, (callback) => {
-    if (callback.symbol.endsWith('USDT')
-        && !callback.symbol.endsWith('DOWNUSDT')
-        && !callback.symbol.endsWith('UPUSDT')
-        && !callback.symbol.startsWith('USDT')
-        && Number(callback.bestAsk) > 0) {
-        let ticker = (tickers.filter(item => item.symbol === callback.symbol))[0]
-        if (ticker !== undefined) ticker.price = callback.bestAsk
-        else {
-            tickers.push({
-                'symbol': callback.symbol,
-                'name': callback.symbol.replace('USDT', ''),
-                'price': callback.bestAsk
-            })
-        }
-    }
-});
+    keep_balance = 0;
 
 (async () => {
+
+    let bookTickers = await binance.bookTickers(undefined, null)
+    Object.entries(bookTickers).forEach(([key, value]) => {
+        if (!key.endsWith('USDT')
+            || key.endsWith('DOWNUSDT')
+            || key.endsWith('UPUSDT')
+            || key.endsWith('UPUSDT')
+            || Number(value.ask) <= 0) {
+            delete bookTickers[key]
+        } else value.name = key.replace('USDT', '')
+    })
 
     let infos = [] && (await binance.exchangeInfo(null))["symbols"]
 
@@ -66,18 +58,18 @@ binance.websockets.bookTickers(undefined, (callback) => {
             let currencies_open = [] && await binance.openOrders(undefined, null)
             let balances = [] && await binance.balance(null)
 
-            for (const [, value] of Object.entries(tickers)) {
-                if (balances[value.name].available * value.price >= 1
+            for (const [key, value] of Object.entries(bookTickers)) {
+                if (balances[value.name].available * value.ask >= 1
                     && value.name !== 'BNB')
-                    console.log(value.name + ' has units out of order: '
-                        + (balances[value.name].available * value.price) + '$')
+                    console.log(key + ' has units out of order: '
+                        + (balances[value.name].available * value.ask) + '$')
 
                 if (balances[value.name].onOrder > 0) {
-                    let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
+                    let _order = (currencies_open.filter(val => val.symbol === key))[0]
                     orders.push(order(
-                        value.symbol,
+                        key,
                         _order['origQty'],
-                        value.price,
+                        value.ask,
                         _order.price,
                         _order['time']
                     ))
@@ -87,12 +79,12 @@ binance.websockets.bookTickers(undefined, (callback) => {
                     && Number(balances[value.name].available) === 0
                     && Number(balances["USDT"].available) >= (keep_balance + mise)) {
                     let moy = []
-                    let res = await binance.candlesticks(value.symbol, interval, null, {limit: limit})
+                    let res = await binance.candlesticks(key, interval, null, {limit: limit})
                     Object.entries(res).forEach(([, value]) => {
                         moy.push(Number(value[4]))
                     })
 
-                    value.price = Number(res[Object.entries(res).length - 1][4])
+                    value.ask = Number(res[Object.entries(res).length - 1][4])
                     let min = Math.min.apply(null, moy)
                     let max = Math.max.apply(null, moy)
                     moy = average(moy)
@@ -101,8 +93,8 @@ binance.websockets.bookTickers(undefined, (callback) => {
 
                     if (prc >= 10 && prcm >= 10) {
                         const detail = Object.create(null)
-                        detail.currency = value.name
-                        detail.price = value.price
+                        detail.currency = key
+                        detail.price = value.ask
                         detail.min = min
                         detail.moy = Number(moy.toFixed(3))
                         detail.max = max
@@ -110,45 +102,45 @@ binance.websockets.bookTickers(undefined, (callback) => {
                         detail.prcm = Number(prcm.toFixed(0))
                         detail.bm = Number((moy * (100 - b_median) / 100).toFixed(6))
                         detail.am = Number((moy * (100 - a_median) / 100).toFixed(6))
-                        detail.amprice = ((value.price - (moy * (100 - a_median) / 100)) / (moy * (100 - a_median) / 100)) * 100
+                        detail.amprice = ((value.ask - (moy * (100 - a_median) / 100)) / (moy * (100 - a_median) / 100)) * 100
                         details.push(detail)
                     }
 
-                    if (moy * (100 - b_median) / 100 <= value.price &&
-                        moy * (100 - a_median) / 100 >= value.price &&
-                        value.price > 0 && prc >= 10 && prcm >= 10) {
+                    if (moy * (100 - b_median) / 100 <= value.ask &&
+                        moy * (100 - a_median) / 100 >= value.ask &&
+                        value.ask > 0 && prc >= 10 && prcm >= 10) {
 
-                        let info = (infos.filter(val => val.symbol === value.symbol))[0]['filters']
+                        let info = (infos.filter(val => val.symbol === key))[0]['filters']
                         let minVolume = (info.filter(val => val['filterType'] === 'LOT_SIZE'))[0]
                         let minPrice = (info.filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
 
                         let lenVol = minVolume.minQty.split('.')
                         lenVol = lenVol[0] === "0" ? (lenVol[1].split('1')[0] + '1').length : 0
-                        let volume = String(mise / value.price)
+                        let volume = String(mise / value.ask)
                         volume = volume.substr(0, volume.split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
 
                         let lenPrice = minPrice.minPrice.split('.')
                         lenPrice = lenPrice[0] === "0" ? (lenPrice[1].split('1')[0] + '1').length : 0
-                        let price = String((Number(value.price) * profit / 100) + Number(value.price))
+                        let price = String((Number(value.ask) * profit / 100) + Number(value.ask))
                         price = price.substr(0, price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
 
-                        await binance.marketBuy(value.symbol, volume, (error,) => {
+                        await binance.marketBuy(key, volume, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
-                                console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
+                                console.error(key + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
                             } else {
-                                console.log(value.symbol + " buy")
+                                console.log(key + " buy")
                                 balances["USDT"].available -= mise
-                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                                binance.sell(key, volume, price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
-                                        console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
+                                        console.error(key + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
                                     } else {
-                                        console.log(value.symbol + " sell")
+                                        console.log(key + " sell")
                                         new_orders.push(order(
-                                            value.symbol,
+                                            key,
                                             volume,
-                                            value.price,
+                                            value.ask,
                                             price,
                                             Date.now()
                                         ))
@@ -160,8 +152,8 @@ binance.websockets.bookTickers(undefined, (callback) => {
                     }
                 }
 
-                total += value.price * Number(balances[value.name].available)
-                total += value.price * Number(balances[value.name].onOrder)
+                total += value.ask * Number(balances[value.name].available)
+                total += value.ask * Number(balances[value.name].onOrder)
             }
 
             if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
