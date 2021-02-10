@@ -6,6 +6,37 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
+const mariadb = require('mariadb');
+const pool = mariadb.createPool({
+    host: secrets.mysql_host(),
+    user: secrets.mysql_user(),
+    password: secrets.mysql_password(),
+    connectionLimit: 5
+})
+
+pool.getConnection()
+    .then(conn => {
+        conn.query(`CREATE DATABASE IF NOT EXISTS binances;`)
+            .then(() => {
+                return conn.query(`
+                    CREATE TABLE IF NOT EXISTS
+                    binances.orders(
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        orderId INT,
+                        price FLOAT,
+                        prc INT
+                    );
+                `).then(() => {
+                    conn.end().then()
+                }).catch(err => {
+                    console.log(err)
+                    conn.end().then()
+                })
+            }).catch(err => {
+            console.log(err)
+        })
+    })
+
 function getDate(date = new Date()) {
     return date.getFullYear() + "-"
         + (String(date.getUTCMonth()).length === 1 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)) + "-"
@@ -29,7 +60,7 @@ function order(currency, volume, now, end, timestamp) {
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
-    mise = 60, profit = 10,
+    mise = 60, security = 70,
     keep_balance = 0;
 
 (async () => {
@@ -68,15 +99,76 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                     console.log(value.symbol + ' has units out of order: '
                         + (balances[value['baseAsset']].available * value.ask) + '$')
 
+                let info = (infos.filter(val => val.symbol === value.symbol))[0]['filters']
+                let minPrice = (info.filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+                let minVolume = (info.filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+
+                let lenPrice = minPrice.minPrice.split('.')
+                lenPrice = lenPrice[0] === "0" ? (lenPrice[1].split('1')[0] + '1').length : 0
+
+                let lenVol = minVolume.minQty.split('.')
+                lenVol = lenVol[0] === "0" ? (lenVol[1].split('1')[0] + '1').length : 0
+
                 if (balances[value['baseAsset']].onOrder > 0) {
                     let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
-                    orders.push(order(
-                        value.symbol,
-                        _order['origQty'],
-                        value.ask,
-                        _order.price,
-                        _order['time']
-                    ))
+
+                    pool.getConnection()
+                        .then(conn => {
+                            conn.query(`SELECT * FROM binances.orders WHERE orderId = (?)`, [
+                                _order.orderId
+                            ]).then(res => {
+                                if (res[0] !== undefined) {
+
+                                    if (value.ask >= res[0]['price'] * 110 / 100
+                                        && value.ask >= res[0]['price'] * res[0]['prc'] / 100) {
+
+                                        let cancel = binance.cancel(value.symbol, _order.orderId)
+                                        console.log(cancel)
+
+                                        if (res[0]['prc'] === security)
+                                            res[0]['prc'] = 95
+                                        else res[0]['prc'] += 5
+
+                                        _order.price = String(res[0]['price'] * res[0]['prc'] / 100)
+                                        _order.price = _order.price.substr(0, _order.price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
+
+                                        _order['origQty'] = _order['origQty'].substr(0, _order['origQty'].split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
+
+                                        binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error, response) => {
+                                            if (error !== null) {
+                                                let responseJson = JSON.parse(error.body)
+                                                console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
+                                            } else {
+                                                console.log(value.symbol + " resell")
+
+                                                conn.query(`UPDATE binances.orders
+                                                    SET orderId = (?), prc = (?)
+                                                    WHERE id = (?)`, [
+                                                    response.orderId, res[0]['prc'], res[0].id
+                                                ]).then(() => {
+                                                    conn.end().then();
+                                                }).catch(err => {
+                                                    console.error(response.orderId + " " + res[0]['prc'])
+                                                    console.error(err)
+                                                    conn.end().then();
+                                                })
+                                            }
+                                        })
+                                    }
+                                }
+                                orders.push(order(
+                                    value.symbol,
+                                    _order['origQty'],
+                                    value.ask,
+                                    _order.price,
+                                    _order['time']
+                                ))
+                                conn.end().then();
+                            }).catch(err => {
+                                conn.end().then();
+                                console.log(err)
+                            });
+                        })
                 }
 
                 if (Number(balances[value['baseAsset']].onOrder) === 0
@@ -108,18 +200,10 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                         moy * (100 - a_median) / 100 >= value.ask &&
                         value.ask > 0 && prc >= 10 && prcm >= 10) {
 
-                        let info = (infos.filter(val => val.symbol === value.symbol))[0]['filters']
-                        let minVolume = (info.filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-                        let minPrice = (info.filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-
-                        let lenVol = minVolume.minQty.split('.')
-                        lenVol = lenVol[0] === "0" ? (lenVol[1].split('1')[0] + '1').length : 0
                         let volume = String(mise / value.ask)
                         volume = volume.substr(0, volume.split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
 
-                        let lenPrice = minPrice.minPrice.split('.')
-                        lenPrice = lenPrice[0] === "0" ? (lenPrice[1].split('1')[0] + '1').length : 0
-                        let price = String((Number(value.ask) * profit / 100) + Number(value.ask))
+                        let price = String((Number(value.ask) * security / 100) + Number(value.ask))
                         price = price.substr(0, price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
 
                         await binance.marketBuy(value.symbol, volume, (error,) => {
@@ -129,12 +213,28 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                             } else {
                                 console.log(value.symbol + " buy")
                                 balances["USDT"].available -= mise
-                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error, res) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
                                         console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price + " " + volume)
                                     } else {
                                         console.log(value.symbol + " sell")
+
+                                        pool.getConnection()
+                                            .then(conn => {
+                                                conn.query(`INSERT INTO binances.orders (
+                                                    orderId, price, prc
+                                                ) VALUES (?, ?, ?)`, [
+                                                    res.orderId, value.ask, security
+                                                ]).then(() => {
+                                                    conn.end().then();
+                                                }).catch(err => {
+                                                    console.error(res.orderId + " " + value.ask)
+                                                    console.error(err)
+                                                    conn.end().then();
+                                                })
+                                            })
+
                                         new_orders.push(order(
                                             value.symbol,
                                             volume,
