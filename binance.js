@@ -111,6 +111,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
                 if (balances[value['baseAsset']].onOrder > 0) {
                     let _order = (currencies_open.filter(val => val.symbol === value.symbol))[0]
+                    console.log(_order)
 
                     pool.getConnection()
                         .then(conn => {
