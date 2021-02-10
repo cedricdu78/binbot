@@ -39,7 +39,6 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
         if (!key.endsWith('USDT')
             || key.endsWith('DOWNUSDT')
             || key.endsWith('UPUSDT')
-            || key.endsWith('UPUSDT')
             || Number(value.ask) <= 0) {
             delete bookTickers[key]
         } else value.name = key.replace('USDT', '')
