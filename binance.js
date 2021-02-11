@@ -29,11 +29,11 @@ pool.getConnection()
                 `).then(() => {
                     conn.end().then()
                 }).catch(err => {
-                    console.log(err)
+                    console.error(err)
                     conn.end().then()
                 })
             }).catch(err => {
-            console.log(err)
+            console.error(err)
         })
     })
 
@@ -107,7 +107,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
                 if (balances[value['baseAsset']].available * value.ask >= 1
                     && value['baseAsset'] !== 'BNB')
-                    console.log(value.symbol + ' has units out of order: '
+                    console.error(value.symbol + ' has units out of order: '
                         + (balances[value['baseAsset']].available * value.ask) + '$')
 
                 if (balances[value['baseAsset']].onOrder > 0) {
@@ -120,12 +120,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                 if (res[0] !== undefined) {
                                     if (value.ask >= res[0]['price'] * 1.1
                                         && value.ask >= res[0]['price'] * (res[0]['prc'] + 10) / 100) {
-                                        console.log(value.symbol + " start: " + res[0]['price'] + " now: " + value.ask + " 10%: " + res[0]['price'] * 1.1)
-                                        console.log(_order)
-
                                         binance.cancel(value.symbol, _order.orderId, (callback) => {
-                                        	console.log(callback)
-
                                         	if (res[0]['prc'] === security)
                                             		res[0]['prc'] = 105
                                         	else res[0]['prc'] += 5
@@ -149,7 +144,6 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                                 		]).then(() => {
                                                     			conn.end().then();
                                                 		}).catch(err => {
-                                                    			console.error(response.orderId + " " + res[0]['prc'])
                                                     			console.error(err)
                                                     			conn.end().then();
                                                 		})
@@ -170,7 +164,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                 conn.end().then();
                             }).catch(err => {
                                 conn.end().then();
-                                console.log(err)
+                                console.error(err)
                             });
                         })
                 }
@@ -233,7 +227,6 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                                 ]).then(() => {
                                                     conn.end().then();
                                                 }).catch(err => {
-                                                    console.error(res.orderId + " " + value.ask)
                                                     console.error(err)
                                                     conn.end().then();
                                                 })
