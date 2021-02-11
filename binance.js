@@ -119,41 +119,42 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                             ]).then(res => {
                                 if (res[0] !== undefined) {
                                     if (value.ask >= res[0]['price'] * 1.1
-                                        && value.ask >= res[0]['price'] * res[0]['prc'] / 100) {
+                                        && value.ask >= res[0]['price'] * (res[0]['prc'] + 10) / 100) {
                                         console.log(value.symbol + " start: " + res[0]['price'] + " now: " + value.ask + " 10%: " + res[0]['price'] * 1.1)
                                         console.log(_order)
 
-                                        let cancel = binance.cancel(value.symbol, _order.orderId)
-                                        console.log(cancel)
+                                        binance.cancel(value.symbol, _order.orderId, (callback) => {
+                                        	console.log(callback)
 
-                                        if (res[0]['prc'] === security)
-                                            res[0]['prc'] = 95
-                                        else res[0]['prc'] += 5
+                                        	if (res[0]['prc'] === security)
+                                            		res[0]['prc'] = 105
+                                        	else res[0]['prc'] += 5
 
-                                        _order.price = String(res[0]['price'] * res[0]['prc'] / 100)
-                                        _order.price = _order.price.substr(0, _order.price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
+                                        	_order.price = String(res[0]['price'] * res[0]['prc'] / 100)
+                                        	_order.price = _order.price.substr(0, _order.price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
 
-                                        _order['origQty'] = _order['origQty'].substr(0, _order['origQty'].split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
+                                        	_order['origQty'] = _order['origQty'].substr(0, _order['origQty'].split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
 
-                                        binance.sell(value.symbol, _order['origQty'], _order.price, {stopPrice: _order.price, type: 'STOP_LOSS_LIMIT'}, (error, response) => {
-                                            if (error !== null) {
-                                                let responseJson = JSON.parse(error.body)
-                                                console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
-                                            } else {
-                                                console.log(value.symbol + " resell")
+                                        	binance.sell(value.symbol, _order['origQty'], _order.price, {stopPrice: _order.price, type: 'STOP_LOSS_LIMIT'}, (error, response) => {
+                                            		if (error !== null) {
+                                                		let responseJson = JSON.parse(error.body)
+                                                		console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"])
+                                            		} else {
+                                                		console.log(value.symbol + " resell")
 
-                                                conn.query(`UPDATE binances.orders
-                                                    SET orderId = (?), prc = (?)
-                                                    WHERE id = (?)`, [
-                                                    response.orderId, res[0]['prc'], res[0].id
-                                                ]).then(() => {
-                                                    conn.end().then();
-                                                }).catch(err => {
-                                                    console.error(response.orderId + " " + res[0]['prc'])
-                                                    console.error(err)
-                                                    conn.end().then();
-                                                })
-                                            }
+                                                		conn.query(`UPDATE binances.orders
+                                                    		SET orderId = (?), prc = (?)
+                                                    		WHERE id = (?)`, [
+                                                    		response.orderId, res[0]['prc'], res[0].id
+                                                		]).then(() => {
+                                                    			conn.end().then();
+                                                		}).catch(err => {
+                                                    			console.error(response.orderId + " " + res[0]['prc'])
+                                                    			console.error(err)
+                                                    			conn.end().then();
+                                                		})
+                                            		}
+						})
                                         })
                                     }
                                     orders.push(order(
