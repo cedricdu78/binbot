@@ -141,8 +141,8 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                                                 console.log(value.symbol + " resell")
 
                                                                 conn.query(`UPDATE binances.orders
-                                                        SET orderId = (?), prc = (?)
-                                                        WHERE id = (?)`, [
+                                                                SET orderId = (?), prc = (?)
+                                                                WHERE id = (?)`, [
                                                                     response.orderId, res[0]['prc'], res[0].id
                                                                 ]).then(() => {
                                                                     conn.end().then();
@@ -163,6 +163,18 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                                     _order['time'],
                                                     ((value.ask - res[0]['price']) / res[0]['price']) * 100
                                                 ))
+                                                counter++;
+                                                if(counter === array.length) {
+                                                    if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
+                                                    if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
+                                                    if (new_orders.length > 0) console.table(new_orders)
+                                                    console.table({
+                                                        'Balance': {
+                                                            'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+                                                            'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
+                                                        }
+                                                    })
+                                                }
                                             }
                                             conn.end().then();
                                         }).catch(err => {
@@ -250,22 +262,8 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
                                         }
                                     })
                                 }
-                            }
-
-                            total += value.ask * Number(balances[value['baseAsset']].available)
-                            total += value.ask * Number(balances[value['baseAsset']].onOrder)
-
-                            counter++;
-                            if(counter === array.length) {
-                                if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
-                                if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
-                                if (new_orders.length > 0) console.table(new_orders)
-                                console.table({
-                                    'Balance': {
-                                        'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                                        'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
-                                    }
-                                })
+                                total += value.ask * Number(balances[value['baseAsset']].available)
+                                total += value.ask * Number(balances[value['baseAsset']].onOrder)
                             }
                         }, {limit: limit})
                     })
