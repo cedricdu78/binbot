@@ -66,38 +66,30 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
 const balance = new Promise(function(resolve, reject) {
     binance.balance((error, balances) => {
-        if (error !== null) {
+        if (error !== null)
             reject(Error(error));
-        } else {
-            resolve(balances);
-        }
+        else resolve(balances);
     })
 });
 
 const openOrders = new Promise(function(resolve, reject) {
     binance.openOrders(undefined,(error, orders) => {
-        if (error !== null) {
+        if (error !== null)
             reject(Error(error));
-        }
-        else {
-            resolve(orders);
-        }
+        else resolve(orders);
     })
 });
 
 const exchangeInfo = new Promise(function(resolve, reject) {
     binance.exchangeInfo((error, exchangeInfo) => {
-        if (error !== null) {
+        if (error !== null)
             reject(Error(error));
-        }
-        else {
-            resolve(Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
+        else resolve(Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
                 && !value.symbol.endsWith('DOWNUSDT')
                 && !value.symbol.endsWith('UPUSDT')
                 && !value.symbol.endsWith('BULLUSDT')
                 && !value.symbol.endsWith('BEARUSDT')
                 && value.status !== 'BREAK'));
-        }
     })
 });
 
@@ -106,9 +98,8 @@ function candlesticks(currencies) {
         let counter = 0
         Object.entries(currencies).forEach(function([, [, value]]) {
             binance.candlesticks(value.symbol, interval, (error, res) => {
-                if (error !== null) {
+                if (error !== null)
                     reject(Error(error));
-                }
                 else {
                     value.moy = []
                     res.forEach(function(val) {
@@ -121,8 +112,7 @@ function candlesticks(currencies) {
                     value.lenPrice = minPrice.minPrice.split('.')[0] === "0" ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
                     value.lenVol = minVolume.minQty.split('.')[0] === "0" ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                    counter++
-                    if (counter === currencies.length) resolve(currencies);
+                    if (++counter === currencies.length) resolve(currencies);
                 }
             }, {limit: limit})
         })
@@ -138,8 +128,7 @@ function noOrders(balances, open_orders) {
                 console.error(value.symbol + ' has units out of order: '
                     + (balances[value.symbol.replace('USDT', '')].available * value.price) + '$')
 
-            counter++
-            if (counter === Object.entries(open_orders).length) resolve();
+            if (++counter === Object.entries(open_orders).length) resolve();
         })
     });
 }
@@ -149,20 +138,15 @@ function changeStopLoss(currencies, open_orders, balances, orders) {
         if (open_orders.length > 0) {
             let counter = 0
             Object.entries(open_orders).forEach(function([, _order]) {
-                if (_order.status === "STOP_LOSS_LIMIT") {
-                    let curr = currencies.filter(([, val]) => val.symbol === _order.symbol)[0][1]
-                    if (balances[curr['baseAsset']].onOrder > 0) {
-                        changeStopLossSQL(curr, _order, orders).then(function () {
-                            counter++
-                            if (counter === Object.entries(open_orders).length) resolve();
-                        }, function (err) {
-                            console.error(err);
-                        });
-                    }
-                }
+                let curr = currencies.filter(([, val]) => val.symbol === _order.symbol)[0][1]
+                if (balances[curr['baseAsset']].onOrder > 0)
+                    changeStopLossSQL(curr, _order, orders).then(function () {
+                        if (++counter === Object.entries(open_orders).length) resolve();
+                    }, function (err) {
+                        console.error(err);
+                    });
             })
         }
-        resolve();
     })
 }
 
@@ -228,6 +212,17 @@ function changeStopLossSQL(value, _order, orders) {
                             ))
                             resolve(orders);
                         }
+                    } else {
+                        orders.push(order(
+                            value.symbol,
+                            _order['origQty'],
+                            _order.price,
+                            0,
+                            value.price,
+                            _order['time'],
+                            100 - ((_order.price - value.price) / value.price) * 100
+                        ))
+                        resolve(orders);
                     }
                     conn.end().then();
                 }).catch(err => {
@@ -326,8 +321,7 @@ function buySell(currencies, balances, details, new_orders, total) {
             total += value.price * Number(balances[value['baseAsset']].available)
             total += value.price * Number(balances[value['baseAsset']].onOrder)
 
-            counter++
-            if (counter === Object.entries(currencies).length) resolve(total);
+            if (++counter === Object.entries(currencies).length) resolve(total);
         });
     });
 }
