@@ -64,34 +64,40 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     mise = 60, security = 70,
     keep_balance = 0;
 
-const balance = new Promise(function(resolve, reject) {
-    binance.balance((error, balances) => {
-        if (error !== null)
-            reject(Error(error));
-        else resolve(balances);
-    })
-});
+function balance() {
+    return new Promise(function(resolve, reject) {
+        binance.balance((error, balances) => {
+            if (error !== null)
+                reject(Error(error));
+            else resolve(balances);
+        })
+    });
+}
 
-const openOrders = new Promise(function(resolve, reject) {
-    binance.openOrders(undefined,(error, orders) => {
-        if (error !== null)
-            reject(Error(error));
-        else resolve(orders);
-    })
-});
+function openOrders() {
+    return new Promise(function(resolve, reject) {
+        binance.openOrders(undefined,(error, orders) => {
+            if (error !== null)
+                reject(Error(error));
+            else resolve(orders);
+        })
+    });
+}
 
-const exchangeInfo = new Promise(function(resolve, reject) {
-    binance.exchangeInfo((error, exchangeInfo) => {
-        if (error !== null)
-            reject(Error(error));
-        else resolve(Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
-                && !value.symbol.endsWith('DOWNUSDT')
-                && !value.symbol.endsWith('UPUSDT')
-                && !value.symbol.endsWith('BULLUSDT')
-                && !value.symbol.endsWith('BEARUSDT')
-                && value.status !== 'BREAK'));
-    })
-});
+function exchangeInfo() {
+    return new Promise(function(resolve, reject) {
+        binance.exchangeInfo((error, exchangeInfo) => {
+            if (error !== null)
+                reject(Error(error));
+            else resolve(Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
+                    && !value.symbol.endsWith('DOWNUSDT')
+                    && !value.symbol.endsWith('UPUSDT')
+                    && !value.symbol.endsWith('BULLUSDT')
+                    && !value.symbol.endsWith('BEARUSDT')
+                    && value.status !== 'BREAK'));
+        })
+    });
+}
 
 function candlesticks(currencies) {
     return new Promise(function(resolve, reject) {
@@ -157,6 +163,7 @@ function changeStopLossSQL(value, _order, orders) {
                 conn.query(`SELECT * FROM binances.orders WHERE orderId = (?)`, [
                     _order.orderId
                 ]).then(res => {
+
                     if (res[0] !== undefined) {
                         if (value.price >= res[0]['price'] * 1.1
                             && value.price >= res[0]['price'] * (res[0]['prc'] + 10) / 100) {
