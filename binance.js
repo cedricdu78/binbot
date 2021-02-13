@@ -182,6 +182,7 @@ function changeStopLossSQL(value, _order, orders) {
                                             WHERE id = (?)`, [
                                             response.orderId, res[0]['prc'], res[0].id
                                         ]).then(() => {
+                                            console.log("1 " + value.symbol)
                                             orders.push(order(
                                                 value.symbol,
                                                 _order['origQty'],
@@ -201,6 +202,7 @@ function changeStopLossSQL(value, _order, orders) {
                                 })
                             })
                         } else {
+                            console.log("2 " + value.symbol)
                             orders.push(order(
                                 value.symbol,
                                 _order['origQty'],
@@ -213,6 +215,7 @@ function changeStopLossSQL(value, _order, orders) {
                             resolve(orders);
                         }
                     } else {
+                        console.log("3 " + value.symbol)
                         orders.push(order(
                             value.symbol,
                             _order['origQty'],
@@ -259,7 +262,7 @@ function buySell(currencies, balances, details, new_orders, total) {
                     detail.prcm = Number(prcm.toFixed(0))
                     detail.bm = Number((value.moy * (100 - b_median) / 100).toFixed(6))
                     detail.am = Number((value.moy * (100 - a_median) / 100).toFixed(6))
-                    detail.amprice = ((value.price - (value.moy * (100 - a_median) / 100)) / (value.moy * (100 - a_median) / 100)) * 100
+                    detail.amprice = Number(((value.price - (value.moy * (100 - a_median) / 100)) / (value.moy * (100 - a_median) / 100)) * 100).toFixed(2)
                     details.push(detail)
                 }
 
@@ -352,11 +355,13 @@ function buySell(currencies, balances, details, new_orders, total) {
             });
 
             await exchangeInfo.then(async function(res) {
-                await candlesticks(res).then(function(res) {
-                    currencies = res
-                }, function(err) {
-                    console.error(err);
-                });
+                currencies = res
+            }, function(err) {
+                console.error(err);
+            });
+
+            await candlesticks(currencies).then(function(res) {
+                currencies = res
             }, function(err) {
                 console.error(err);
             });
