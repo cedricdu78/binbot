@@ -125,16 +125,16 @@ function candlesticks(currencies) {
     });
 }
 
-function noOrders(balances, open_orders) {
+function noOrders(balances, currencies) {
     return new Promise(function(resolve,) {
         let counter = 0
-        Object.entries(open_orders).forEach(([, value]) => {
-            if (balances[value.symbol.replace('USDT', '')].available * value.price >= 1
-                && value.symbol.replace('USDT', '') !== 'BNB')
+        Object.entries(currencies).forEach(([, [, value]]) => {
+            if (balances[value['baseAsset']].available * value.price >= 1
+                && value['baseAsset'] !== 'BNB')
                 console.error(value.symbol + ' has units out of order: '
-                    + (balances[value.symbol.replace('USDT', '')].available * value.price) + '$')
+                    + (balances[value['baseAsset']].available * value.price) + '$')
 
-            if (++counter === Object.entries(open_orders).length) resolve();
+            if (++counter === Object.entries(currencies).length) resolve();
         })
     });
 }
@@ -371,7 +371,7 @@ function buySell(currencies, balances, details, new_orders, total) {
                 console.error(err);
             });
 
-            await noOrders(balances, open_orders).then(null, function(err) {
+            await noOrders(balances, currencies).then(null, function(err) {
                 console.error(err);
             });
 
