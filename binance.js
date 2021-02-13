@@ -353,8 +353,7 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 console.error(err);
             });
 
-            await noOrders(balances, open_orders).then(function() {
-            }, function(err) {
+            await noOrders(balances, open_orders).then(null, function(err) {
                 console.error(err);
             });
 
@@ -376,6 +375,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
             console.error(err)
         }
 
-        await new Promise(res => setTimeout(res, 30000));
+        await new Promise(res => setTimeout(res, 15000));
     }
 })()
