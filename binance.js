@@ -21,10 +21,10 @@ pool.getConnection()
                 return conn.query(`
                     CREATE TABLE IF NOT EXISTS
                         binances.orders(
-                                           id INT AUTO_INCREMENT PRIMARY KEY,
-                                           orderId INT,
-                                           price FLOAT,
-                                           prc INT
+                           id INT AUTO_INCREMENT PRIMARY KEY,
+                           orderId INT,
+                           price FLOAT,
+                           prc INT
                     );
                 `).then(() => {
                     conn.end().then()
@@ -64,7 +64,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     mise = 60, security = 70,
     keep_balance = 0;
 
-let balance = new Promise(function(resolve, reject) {
+const balance = new Promise(function(resolve, reject) {
     binance.balance((error, balances) => {
         if (error !== null) {
             reject(Error(error));
@@ -146,20 +146,23 @@ function noOrders(balances, open_orders) {
 
 function changeStopLoss(currencies, open_orders, balances, orders) {
     return new Promise(function (resolve,) {
-        let counter = 0
-        Object.entries(currencies).forEach(function([, [,value]]) {
-            if (balances[value['baseAsset']].onOrder > 0) {
-                let or = (open_orders.filter(v => v.symbol === value.symbol))[0]
-                if (or !== undefined) {
-                    changeStopLossSQL(value, or, orders).then(function () {
-                        counter++
-                        if (counter === Object.entries(open_orders).length) resolve();
-                    }, function (err) {
-                        console.error(err);
-                    });
+        if (open_orders.length > 0) {
+            let counter = 0
+            Object.entries(open_orders).forEach(function([, _order]) {
+                if (_order.status === "STOP_LOSS_LIMIT") {
+                    let curr = currencies.filter(([, val]) => val.symbol === _order.symbol)[0][1]
+                    if (balances[curr['baseAsset']].onOrder > 0) {
+                        changeStopLossSQL(curr, _order, orders).then(function () {
+                            counter++
+                            if (counter === Object.entries(open_orders).length) resolve();
+                        }, function (err) {
+                            console.error(err);
+                        });
+                    }
                 }
-            }
-        })
+            })
+        }
+        resolve();
     })
 }
 
@@ -191,10 +194,20 @@ function changeStopLossSQL(value, _order, orders) {
                                         console.log(value.symbol + " resell")
 
                                         conn.query(`UPDATE binances.orders
-                                                                        SET orderId = (?), prc = (?)
-                                                                        WHERE id = (?)`, [
+                                            SET orderId = (?), prc = (?)
+                                            WHERE id = (?)`, [
                                             response.orderId, res[0]['prc'], res[0].id
                                         ]).then(() => {
+                                            orders.push(order(
+                                                value.symbol,
+                                                _order['origQty'],
+                                                _order.price,
+                                                res[0]['price'],
+                                                value.price,
+                                                _order['time'],
+                                                ((value.price - res[0]['price']) / res[0]['price']) * 100
+                                            ))
+                                            resolve(orders);
                                             conn.end().then();
                                         }).catch(err => {
                                             console.error(err)
@@ -203,18 +216,19 @@ function changeStopLossSQL(value, _order, orders) {
                                     }
                                 })
                             })
+                        } else {
+                            orders.push(order(
+                                value.symbol,
+                                _order['origQty'],
+                                _order.price,
+                                res[0]['price'],
+                                value.price,
+                                _order['time'],
+                                ((value.price - res[0]['price']) / res[0]['price']) * 100
+                            ))
+                            resolve(orders);
                         }
-                        orders.push(order(
-                            value.symbol,
-                            _order['origQty'],
-                            _order.price,
-                            res[0]['price'],
-                            value.price,
-                            _order['time'],
-                            ((value.price - res[0]['price']) / res[0]['price']) * 100
-                        ))
                     }
-                    resolve(orders);
                     conn.end().then();
                 }).catch(err => {
                     conn.end().then();
@@ -281,8 +295,8 @@ function buySell(currencies, balances, details, new_orders, total) {
                                     pool.getConnection()
                                         .then(conn => {
                                             conn.query(`INSERT INTO binances.orders (
-                                                        orderId, price, prc
-                                                    ) VALUES (?, ?, ?)`, [
+                                                orderId, price, prc
+                                            ) VALUES (?, ?, ?)`, [
                                                 res.orderId, value.price, security
                                             ]).then(() => {
                                                 conn.end().then();
