@@ -68,14 +68,13 @@ let balance = new Promise(function(resolve, reject) {
     binance.balance((error, balances) => {
         if (error !== null) {
             reject(Error(error));
-        }
-        else {
+        } else {
             resolve(balances);
         }
     })
 });
 
-let openOrders = new Promise(function(resolve, reject) {
+const openOrders = new Promise(function(resolve, reject) {
     binance.openOrders(undefined,(error, orders) => {
         if (error !== null) {
             reject(Error(error));
@@ -86,7 +85,7 @@ let openOrders = new Promise(function(resolve, reject) {
     })
 });
 
-let exchangeInfo = new Promise(function(resolve, reject) {
+const exchangeInfo = new Promise(function(resolve, reject) {
     binance.exchangeInfo((error, exchangeInfo) => {
         if (error !== null) {
             reject(Error(error));
@@ -117,6 +116,11 @@ function candlesticks(currencies) {
                     })
                     value.price = value.moy[value.moy.length - 1]
 
+                    let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+                    let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+                    value.lenPrice = minPrice.minPrice.split('.')[0] === "0" ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+                    value.lenVol = minVolume.minQty.split('.')[0] === "0" ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+
                     counter++
                     if (counter === currencies.length) resolve(currencies);
                 }
@@ -126,7 +130,7 @@ function candlesticks(currencies) {
 }
 
 function noOrders(balances, open_orders) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve,) {
         let counter = 0
         Object.entries(open_orders).forEach(([, value]) => {
             if (balances[value.symbol.replace('USDT', '')].available * value.price >= 1
@@ -140,13 +144,27 @@ function noOrders(balances, open_orders) {
     });
 }
 
-function changeStopLossSQL(value, _order, orders) {
-    return new Promise(function(resolve, reject) {
-        let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-        let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-        let lenPrice = minPrice.minPrice.split('.')[0] === "0" ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
-        let lenVol = minVolume.minQty.split('.')[0] === "0" ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+function changeStopLoss(currencies, open_orders, balances, orders) {
+    return new Promise(function (resolve,) {
+        let counter = 0
+        Object.entries(currencies).forEach(function([, [,value]]) {
+            if (balances[value['baseAsset']].onOrder > 0) {
+                let or = (open_orders.filter(v => v.symbol === value.symbol))[0]
+                if (or !== undefined) {
+                    changeStopLossSQL(value, or, orders).then(function () {
+                        counter++
+                        if (counter === Object.entries(open_orders).length) resolve();
+                    }, function (err) {
+                        console.error(err);
+                    });
+                }
+            }
+        })
+    })
+}
 
+function changeStopLossSQL(value, _order, orders) {
+    return new Promise(function(resolve,) {
         pool.getConnection()
             .then(conn => {
                 conn.query(`SELECT * FROM binances.orders WHERE orderId = (?)`, [
@@ -161,9 +179,9 @@ function changeStopLossSQL(value, _order, orders) {
                                 else res[0]['prc'] += 5
 
                                 _order.price = String(res[0]['price'] * res[0]['prc'] / 100)
-                                _order.price = _order.price.substr(0, _order.price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
+                                _order.price = _order.price.substr(0, _order.price.split('.')[0].length + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                                _order['origQty'] = _order['origQty'].substr(0, _order['origQty'].split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
+                                _order['origQty'] = _order['origQty'].substr(0, _order['origQty'].split('.')[0].length + (value.lenVol ? 1 : 0) + value.lenVol)
 
                                 binance.sell(value.symbol, _order['origQty'], _order.price, {stopPrice: _order.price, type: 'STOP_LOSS_LIMIT'}, (error, response) => {
                                     if (error !== null) {
@@ -186,7 +204,7 @@ function changeStopLossSQL(value, _order, orders) {
                                 })
                             })
                         }
-                        orders[value.symbol] = order(
+                        orders.push(order(
                             value.symbol,
                             _order['origQty'],
                             _order.price,
@@ -194,7 +212,7 @@ function changeStopLossSQL(value, _order, orders) {
                             value.price,
                             _order['time'],
                             ((value.price - res[0]['price']) / res[0]['price']) * 100
-                        )
+                        ))
                     }
                     resolve(orders);
                     conn.end().then();
@@ -207,17 +225,13 @@ function changeStopLossSQL(value, _order, orders) {
 }
 
 function buySell(currencies, balances, details, new_orders, total) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve,) {
         let counter = 0
         Object.entries(currencies).forEach(function([, [, value]]) {
+
             if (Number(balances[value['baseAsset']].onOrder) === 0
                 && Number(balances[value['baseAsset']].available) === 0
                 && Number(balances["USDT"].available) >= (keep_balance + mise)) {
-
-                let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-                let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-                let lenPrice = minPrice.minPrice.split('.')[0] === "0" ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
-                let lenVol = minVolume.minQty.split('.')[0] === "0" ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
                 let min = Math.min.apply(null, value.moy)
                 let max = Math.max.apply(null, value.moy)
@@ -245,10 +259,10 @@ function buySell(currencies, balances, details, new_orders, total) {
                     value.price > 0 && prc >= 10 && prcm >= 10) {
 
                     let volume = String(mise / value.price)
-                    volume = volume.substr(0, volume.split('.')[0].length + (lenVol ? 1 : 0) + lenVol)
+                    volume = volume.substr(0, volume.split('.')[0].length + (value.lenVol ? 1 : 0) + value.lenVol)
 
                     let price = String(value.price * security / 100)
-                    price = price.substr(0, price.split('.')[0].length + (lenPrice ? 1 : 0) + lenPrice)
+                    price = price.substr(0, price.split('.')[0].length + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
                     binance.marketBuy(value.symbol, volume, (error,) => {
                         if (error !== null) {
@@ -304,32 +318,15 @@ function buySell(currencies, balances, details, new_orders, total) {
     });
 }
 
-let balances = []
-let open_orders = []
-let currencies = []
-let orders = []
 
-binance.websockets.bookTickers(undefined, (callback) => {
-    let curr = currencies.filter(([, val]) => val.symbol === callback.symbol)
-    if (curr.length > 0 && open_orders.length > 0) {
-        curr[0][1].price = Number(callback.bestAsk)
-
-        if (balances[callback.symbol.replace('USDT', '')].onOrder > 0) {
-            let or = (open_orders.filter(v => v.symbol === callback.symbol))[0]
-            if (or !== undefined) {
-                changeStopLossSQL(curr[0][1], or, orders).then(null, function(err) {
-                    console.error(err);
-                });
-            } else {
-                delete orders[callback.symbol]
-            }
-        }
-    }
-});
 
 (async () => {
 
     while (1) {
+        let balances = []
+        let open_orders = []
+        let currencies = []
+        let orders = []
         let new_orders = []
         let details = []
         let total = 0
@@ -362,6 +359,10 @@ binance.websockets.bookTickers(undefined, (callback) => {
                 console.error(err);
             });
 
+            await changeStopLoss(currencies, open_orders, balances, orders).then(null, function(err) {
+                console.error(err);
+            });
+
             await buySell(currencies, balances, details, new_orders, total).then(function(res) {
                 total = res
                 if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
@@ -380,6 +381,6 @@ binance.websockets.bookTickers(undefined, (callback) => {
             console.error(err)
         }
 
-        await new Promise(res => setTimeout(res, 15000));
+        await new Promise(res => setTimeout(res, 10000));
     }
 })()
