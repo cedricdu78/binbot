@@ -202,7 +202,6 @@ function changeStopLossSQL(value, _order, orders) {
                                 })
                             })
                         } else {
-                            console.log("2 " + value.symbol)
                             orders.push(order(
                                 value.symbol,
                                 _order['origQty'],
@@ -215,7 +214,6 @@ function changeStopLossSQL(value, _order, orders) {
                             resolve(orders);
                         }
                     } else {
-                        console.log("3 " + value.symbol)
                         orders.push(order(
                             value.symbol,
                             _order['origQty'],
