@@ -347,19 +347,19 @@ function buySell(currencies, balances, details, new_orders, total) {
 
         try {
 
-            await balance.then(function(res) {
+            await balance().then(function(res) {
                 balances = res
             }, function(err) {
                 console.error(err);
             });
 
-            await openOrders.then(function(res) {
+            await openOrders().then(function(res) {
                 open_orders = res
             }, function(err) {
                 console.error(err);
             });
 
-            await exchangeInfo.then(async function(res) {
+            await exchangeInfo().then(async function(res) {
                 currencies = res
             }, function(err) {
                 console.error(err);
