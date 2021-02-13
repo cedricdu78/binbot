@@ -214,6 +214,11 @@ function buySell(currencies, balances, details, new_orders, total) {
                 && Number(balances[value['baseAsset']].available) === 0
                 && Number(balances["USDT"].available) >= (keep_balance + mise)) {
 
+                let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+                let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+                let lenPrice = minPrice.minPrice.split('.')[0] === "0" ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+                let lenVol = minVolume.minQty.split('.')[0] === "0" ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+
                 let min = Math.min.apply(null, value.moy)
                 let max = Math.max.apply(null, value.moy)
                 value.moy = average(value.moy)
