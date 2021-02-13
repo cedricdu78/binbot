@@ -318,8 +318,6 @@ function buySell(currencies, balances, details, new_orders, total) {
     });
 }
 
-
-
 (async () => {
 
     while (1) {
