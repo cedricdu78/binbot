@@ -189,7 +189,6 @@ function changeStopLossSQL(value, _order, orders) {
                                             WHERE id = (?)`, [
                                             response.orderId, res[0]['prc'], res[0].id
                                         ]).then(() => {
-                                            console.log("1 " + value.symbol)
                                             orders.push(order(
                                                 value.symbol,
                                                 _order['origQty'],
