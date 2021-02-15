@@ -67,7 +67,11 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 function balance() {
     try {
         return new Promise(function(resolve, reject) {
-
+            binance.balance((error, balances) => {
+                if (error !== null)
+                    reject(Error(error));
+                else resolve(balances);
+            })
         });
     } catch (err) {
         console.error(err)
