@@ -198,7 +198,7 @@ function changeStopLossSQL(value, _order, orders) {
                                 && value.price >= res[0]['price'] * (res[0]['prc'] + 10) / 100) {
                                 binance.cancel(value.symbol, _order.orderId, () => {
                                     if (res[0]['prc'] === security)
-                                        res[0]['prc'] = 105
+                                        res[0]['prc'] = 108
                                     else res[0]['prc'] += 5
 
                                     _order.price = String(res[0]['price'] * res[0]['prc'] / 100)
