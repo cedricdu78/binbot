@@ -388,60 +388,30 @@ function buySell(currencies, balances, details, new_orders) {
         let details = []
 
         try {
-
             await balance().then(async function(balances) {
-
                 await openOrders().then(async function(open_orders) {
-
                     await exchangeInfo().then(async function(currencies) {
-
                         await candlesticks(currencies).then(async function(currencies) {
-
                             await noOrders(balances, currencies).then(async function() {
-
                                 await changeStopLoss(currencies, open_orders, balances, orders).then(async function() {
-
                                     await buySell(currencies, balances, details, new_orders).then(async function(total) {
                                         if (details.length > 0) console.table(details.sort(
-                                            (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
+                                                (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
                                         console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
                                         if (new_orders.length > 0) console.table(new_orders)
                                         console.table({
                                             'Balance': {
-                                                'Available': Number(Number(balances["USDT"].available)
-                                                    .toFixed(2)),
-                                                'Total': Number((Number(total) + Number(balances["USDT"].available))
-                                                    .toFixed(2))
+                                                'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+                                                'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
                                             }
                                         })
-                                    }, function(err) {
-                                        console.error(err);
                                     });
-
-                                }, function(err) {
-                                    console.error(err);
                                 });
-
-                            }, function(err) {
-                                console.error(err);
                             });
-
-                        }, function(err) {
-                            console.error(err);
                         });
-
-                    }, function(err) {
-                        console.error(err);
                     });
-
-                }, function(err) {
-                    console.error(err);
                 });
-
-            }, function(err) {
-                console.error(err);
             });
-
         } catch (err) {
             console.error(err)
         }
