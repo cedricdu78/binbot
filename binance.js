@@ -61,7 +61,7 @@ function order(currency, volume, stopLoss, openValue, nowValue, timestamp, plusV
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
-    mise = 60, security = 20,
+    mise = 60, security = 40,
     keep_balance = 0;
 
 function balance() {
