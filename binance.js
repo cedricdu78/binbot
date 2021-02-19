@@ -6,37 +6,6 @@ const binance = new Binance().options({
     APISECRET: secrets.binance_secret()
 });
 
-const mariadb = require('mariadb');
-const pool = mariadb.createPool({
-    host: secrets.mysql_host(),
-    user: secrets.mysql_user(),
-    password: secrets.mysql_password(),
-    connectionLimit: 5
-});
-
-pool.getConnection()
-    .then(conn => {
-        conn.query(`CREATE DATABASE IF NOT EXISTS binances;`)
-            .then(() => {
-                return conn.query(`
-                    CREATE TABLE IF NOT EXISTS
-                        binances.orders(
-                           id INT AUTO_INCREMENT PRIMARY KEY,
-                           orderId INT,
-                           price FLOAT,
-                           prc INT
-                    );
-                `).then(() => {
-                    conn.end().then()
-                }).catch(err => {
-                    console.error(err)
-                    conn.end().then()
-                })
-            }).catch(err => {
-            console.error(err)
-        })
-    });
-
 function getDate(date = new Date()) {
     return date.getFullYear() + "-"
         + (String(date.getUTCMonth()).length === 1 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)) + "-"
@@ -61,7 +30,7 @@ function order(currency, volume, stopLoss, openValue, nowValue, timestamp, plusV
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
-    mise = 60, security = 40,
+    mise = 60, profit = 110,
     keep_balance = 0;
 
 function balance() {
@@ -84,7 +53,9 @@ function openOrders() {
             binance.openOrders(undefined,(error, orders) => {
                 if (error !== null)
                     reject(Error(error));
-                else resolve(orders);
+                else {
+                    resolve(orders);
+                }
             })
         });
     } catch (err) {
@@ -163,120 +134,6 @@ function noOrders(balances, currencies) {
     }
 }
 
-function changeStopLoss(currencies, open_orders, balances, orders) {
-    try {
-        return new Promise(function (resolve,) {
-            if (open_orders.length > 0) {
-                let counter = 0
-                Object.entries(open_orders).forEach(function([, _order]) {
-                    let curr = currencies.filter(([, val]) => val.symbol === _order.symbol)[0][1]
-                    if (balances[curr['baseAsset']].onOrder > 0)
-                        changeStopLossSQL(curr, _order, orders).then(function () {
-                            if (++counter === Object.entries(open_orders).length) resolve();
-                        }, function (err) {
-                            console.error(err);
-                        });
-                })
-            }
-        })
-    } catch (err) {
-        console.error(err)
-    }
-}
-
-function changeStopLossSQL(value, _order, orders) {
-    try {
-        return new Promise(function(resolve,) {
-            pool.getConnection()
-                .then(conn => {
-                    conn.query(`SELECT * FROM binances.orders WHERE orderId = (?)`, [
-                        _order.orderId
-                    ]).then(res => {
-
-                        if (res[0] !== undefined) {
-                            if (value.price >= res[0]['price'] * 1.1
-                                && value.price >= res[0]['price'] * (res[0]['prc'] + 10) / 100) {
-                                binance.cancel(value.symbol, _order.orderId, () => {
-                                    if (res[0]['prc'] === security)
-                                        res[0]['prc'] = 108
-                                    else res[0]['prc'] += 5
-
-                                    _order.price = String(res[0]['price'] * res[0]['prc'] / 100)
-                                    _order.price = _order.price.substr(0, _order.price
-                                        .split('.')[0].length + (value.lenPrice ? 1 : 0) + value.lenPrice)
-
-                                    _order['origQty'] = _order['origQty'].substr(0, _order['origQty']
-                                        .split('.')[0].length + (value.lenVol ? 1 : 0) + value.lenVol)
-
-                                    binance.sell(value.symbol, _order['origQty'], _order.price, {
-                                        stopPrice: _order.price, type: 'STOP_LOSS_LIMIT'
-                                    }, (error, response) => {
-                                        if (error !== null) {
-                                            let responseJson = JSON.parse(error.body)
-                                            console.error(value.symbol + " [" + responseJson.code + "]: "
-                                                + responseJson["msg"])
-                                        } else {
-                                            console.log(value.symbol + " resell")
-
-                                            conn.query(`UPDATE binances.orders
-                                                SET orderId = (?), prc = (?)
-                                                WHERE id = (?)`, [
-                                                response.orderId, res[0]['prc'], res[0].id
-                                            ]).then(() => {
-                                                orders.push(order(
-                                                    value.symbol,
-                                                    _order['origQty'],
-                                                    _order.price,
-                                                    res[0]['price'],
-                                                    value.price,
-                                                    _order['time'],
-                                                    ((value.price - res[0]['price']) / res[0]['price']) * 100
-                                                ))
-                                                resolve(orders);
-                                                conn.end().then();
-                                            }).catch(err => {
-                                                console.error(err)
-                                                conn.end().then();
-                                            })
-                                        }
-                                    })
-                                })
-                            } else {
-                                orders.push(order(
-                                    value.symbol,
-                                    _order['origQty'],
-                                    _order.price,
-                                    res[0]['price'],
-                                    value.price,
-                                    _order['time'],
-                                    ((value.price - res[0]['price']) / res[0]['price']) * 100
-                                ))
-                                resolve(orders);
-                            }
-                        } else {
-                            orders.push(order(
-                                value.symbol,
-                                _order['origQty'],
-                                _order.price,
-                                0,
-                                value.price,
-                                _order['time'],
-                                100 - ((_order.price - value.price) / value.price) * 100
-                            ))
-                            resolve(orders);
-                        }
-                        conn.end().then();
-                    }).catch(err => {
-                        conn.end().then();
-                        console.error(err);
-                    });
-                })
-        });
-    } catch (err) {
-        console.error(err)
-    }
-}
-
 function buySell(currencies, balances, details, new_orders) {
     try {
         return new Promise(function(resolve,) {
@@ -317,7 +174,7 @@ function buySell(currencies, balances, details, new_orders) {
                         volume = volume.substr(0, volume.split('.')[0].length
                             + (value.lenVol ? 1 : 0) + value.lenVol)
 
-                        let price = String(value.price * security / 100)
+                        let price = String(value.price * profit / 100)
                         price = price.substr(0, price.split('.')[0].length
                             + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
@@ -329,28 +186,13 @@ function buySell(currencies, balances, details, new_orders) {
                             } else {
                                 console.log(value.symbol + " buy")
                                 balances["USDT"].available -= mise
-                                binance.sell(value.symbol, volume, price,
-                                    {stopPrice: price, type: 'STOP_LOSS_LIMIT'}, (error, res) => {
+                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error, res) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
                                         console.error(value.symbol + " [" + responseJson.code + "]: "
                                             + responseJson["msg"] + " " + price + " " + volume)
                                     } else {
                                         console.log(value.symbol + " sell")
-
-                                        pool.getConnection()
-                                            .then(conn => {
-                                                conn.query(`INSERT INTO binances.orders (
-                                                    orderId, price, prc
-                                                ) VALUES (?, ?, ?)`, [
-                                                    res.orderId, value.price, security
-                                                ]).then(() => {
-                                                    conn.end().then();
-                                                }).catch(err => {
-                                                    console.error(err)
-                                                    conn.end().then();
-                                                })
-                                            })
 
                                         new_orders.push(order(
                                             value.symbol,
@@ -383,29 +225,41 @@ function buySell(currencies, balances, details, new_orders) {
 (async () => {
 
     while (1) {
-        let orders = []
         let new_orders = []
         let details = []
+        let orders = []
 
         try {
             await balance().then(async function(balances) {
-                await openOrders().then(async function(open_orders) {
+                await openOrders().then(async function(openOrders) {
                     await exchangeInfo().then(async function(currencies) {
                         await candlesticks(currencies).then(async function(currencies) {
                             await noOrders(balances, currencies).then(async function() {
-                                await changeStopLoss(currencies, open_orders, balances, orders).then(async function() {
-                                    await buySell(currencies, balances, details, new_orders).then(async function(total) {
-                                        if (details.length > 0) console.table(details.sort(
-                                                (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
-                                        console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
-                                        if (new_orders.length > 0) console.table(new_orders)
-                                        console.table({
-                                            'Balance': {
-                                                'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                                                'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
-                                            }
-                                        })
-                                    });
+                                await buySell(currencies, balances, details, new_orders).then(async function(total) {
+                                    if (details.length > 0) console.table(details.sort(
+                                        (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
+
+                                    Object.entries(openOrders).forEach(([, value]) => {
+                                        let curr = currencies.filter(([, val]) => val.symbol === value.symbol)[0][1]
+                                        orders.push(order(
+                                            value.symbol,
+                                            value['origQty'],
+                                            value.price,
+                                            (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
+                                            curr.price,
+                                            value['time'],
+                                            100 - ((value.price - curr.price) / curr.price) * 100
+                                        ))
+                                    })
+
+                                    console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
+                                    if (new_orders.length > 0) console.table(new_orders)
+                                    console.table({
+                                        'Balance': {
+                                            'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+                                            'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
+                                        }
+                                    })
                                 });
                             });
                         });
@@ -419,3 +273,4 @@ function buySell(currencies, balances, details, new_orders) {
         await new Promise(res => setTimeout(res, 10000));
     }
 })()
+
