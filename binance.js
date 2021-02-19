@@ -134,7 +134,7 @@ function noOrders(balances, currencies) {
     }
 }
 
-function buySell(currencies, balances, details, new_orders) {
+function buyLimit(currencies, balances, details, new_orders) {
     try {
         return new Promise(function(resolve,) {
             let counter = 0, total = 0
@@ -235,7 +235,7 @@ function buySell(currencies, balances, details, new_orders) {
                     await exchangeInfo().then(async function(currencies) {
                         await candlesticks(currencies).then(async function(currencies) {
                             await noOrders(balances, currencies).then(async function() {
-                                await buySell(currencies, balances, details, new_orders).then(async function(total) {
+                                await buyLimit(currencies, balances, details, new_orders).then(async function(total) {
                                     if (details.length > 0) console.table(details.sort(
                                         (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
 
