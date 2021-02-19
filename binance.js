@@ -186,7 +186,7 @@ function buyLimit(currencies, balances, details, new_orders) {
                             } else {
                                 console.log(value.symbol + " buy")
                                 balances["USDT"].available -= mise
-                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error, res) => {
+                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
                                     if (error !== null) {
                                         let responseJson = JSON.parse(error.body)
                                         console.error(value.symbol + " [" + responseJson.code + "]: "
