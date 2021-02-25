@@ -1,1 +1,1 @@
-# kraken_bot
+# Binance Bot
