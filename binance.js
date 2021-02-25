@@ -35,7 +35,7 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
 
 function balance() {
     try {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             binance.balance((error, balances) => {
                 if (error !== null)
                     reject(Error(error));
@@ -49,8 +49,8 @@ function balance() {
 
 function openOrders() {
     try {
-        return new Promise(function(resolve, reject) {
-            binance.openOrders(undefined,(error, orders) => {
+        return new Promise(function (resolve, reject) {
+            binance.openOrders(undefined, (error, orders) => {
                 if (error !== null)
                     reject(Error(error));
                 else {
@@ -65,17 +65,17 @@ function openOrders() {
 
 function exchangeInfo() {
     try {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             binance.exchangeInfo((error, exchangeInfo) => {
                 if (error !== null)
                     reject(Error(error));
                 else resolve(
                     Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
-                    && !value.symbol.endsWith('DOWNUSDT')
-                    && !value.symbol.endsWith('UPUSDT')
-                    && !value.symbol.endsWith('BULLUSDT')
-                    && !value.symbol.endsWith('BEARUSDT')
-                    && value.status !== 'BREAK')
+                        && !value.symbol.endsWith('DOWNUSDT')
+                        && !value.symbol.endsWith('UPUSDT')
+                        && !value.symbol.endsWith('BULLUSDT')
+                        && !value.symbol.endsWith('BEARUSDT')
+                        && value.status !== 'BREAK')
                 );
             })
         });
@@ -86,15 +86,15 @@ function exchangeInfo() {
 
 function candlesticks(currencies) {
     try {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             let counter = 0
-            Object.entries(currencies).forEach(function([, [, value]]) {
+            Object.entries(currencies).forEach(function ([, [, value]]) {
                 binance.candlesticks(value.symbol, interval, (error, res) => {
                     if (error !== null)
                         reject(Error(error));
                     else {
                         value.moy = []
-                        res.forEach(function(val) {
+                        res.forEach(function (val) {
                             value.moy.push(Number(val[4]))
                         })
                         value.price = value.moy[value.moy.length - 1]
@@ -118,7 +118,7 @@ function candlesticks(currencies) {
 
 function noOrders(balances, currencies) {
     try {
-        return new Promise(function(resolve,) {
+        return new Promise(function (resolve,) {
             let counter = 0
             Object.entries(currencies).forEach(([, [, value]]) => {
                 if (balances[value['baseAsset']].available * value.price >= 1
@@ -136,9 +136,9 @@ function noOrders(balances, currencies) {
 
 function buyLimit(currencies, balances, details, new_orders) {
     try {
-        return new Promise(function(resolve,) {
+        return new Promise(function (resolve,) {
             let counter = 0, total = 0
-            Object.entries(currencies).forEach(function([, [, value]]) {
+            Object.entries(currencies).forEach(function ([, [, value]]) {
 
                 if (Number(balances[value['baseAsset']].onOrder) === 0
                     && Number(balances[value['baseAsset']].available) === 0
@@ -222,55 +222,52 @@ function buyLimit(currencies, balances, details, new_orders) {
     }
 }
 
-(async () => {
+function output(details, new_orders, orders, currencies, balances, openOrders, total) {
+    if (details.length > 0) console.table(details.sort(
+        (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
 
+    Object.entries(openOrders).forEach(([, value]) => {
+        let curr = currencies.filter(([, val]) => val.symbol === value.symbol)[0][1]
+        orders.push(order(
+            value.symbol,
+            value['origQty'],
+            value.price,
+            (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
+            curr.price,
+            value['time'],
+            100 - ((value.price - curr.price) / curr.price) * 100
+        ))
+    })
+
+    console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
+    if (new_orders.length > 0) console.table(new_orders)
+    console.table({
+        'Balance': {
+            'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+            'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
+        }
+    })
+}
+
+(async () => {
     while (1) {
         let new_orders = []
         let details = []
         let orders = []
 
         try {
-            await balance().then(async function(balances) {
-                await openOrders().then(async function(openOrders) {
-                    await exchangeInfo().then(async function(currencies) {
-                        await candlesticks(currencies).then(async function(currencies) {
-                            await noOrders(balances, currencies).then(async function() {
-                                await buyLimit(currencies, balances, details, new_orders).then(async function(total) {
-                                    if (details.length > 0) console.table(details.sort(
-                                        (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
-
-                                    Object.entries(openOrders).forEach(([, value]) => {
-                                        let curr = currencies.filter(([, val]) => val.symbol === value.symbol)[0][1]
-                                        orders.push(order(
-                                            value.symbol,
-                                            value['origQty'],
-                                            value.price,
-                                            (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
-                                            curr.price,
-                                            value['time'],
-                                            100 - ((value.price - curr.price) / curr.price) * 100
-                                        ))
-                                    })
-
-                                    console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
-                                    if (new_orders.length > 0) console.table(new_orders)
-                                    console.table({
-                                        'Balance': {
-                                            'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-                                            'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
-                                        }
-                                    })
-                                });
-                            });
-                        });
-                    });
-                });
-            });
+            await balance().then(async function (balances) {
+            await openOrders().then(async function (openOrders) {
+            await exchangeInfo().then(async function (currencies) {
+            await candlesticks(currencies).then(async function (currencies) {
+            await noOrders(balances, currencies).then(async function () {
+            await buyLimit(currencies, balances, details, new_orders).then(function (total) {
+                output(details, new_orders, orders, currencies, balances, openOrders, total)
+            })})})})})});
         } catch (err) {
             console.error(err)
         }
 
         await new Promise(res => setTimeout(res, 10000));
     }
-})()
-
+})();
