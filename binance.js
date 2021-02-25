@@ -33,60 +33,69 @@ const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     mise = 120, profit = 110,
     keep_balance = 0;
 
-function balance() {
+function main() {
     try {
-        return new Promise(function (resolve, reject) {
+        new Promise(function (resolve, reject) {
             binance.balance((error, balances) => {
                 if (error !== null)
                     reject(Error(error));
-                else resolve(balances);
+                else {
+                    openOrders(balances)
+                    resolve();
+                }
             })
-        });
+        }).then();
     } catch (err) {
+        new Promise(res => setTimeout(res, 10000)).finally(() => main());
         console.error(err)
     }
 }
 
-function openOrders() {
+function openOrders(balances) {
     try {
-        return new Promise(function (resolve, reject) {
+        new Promise(function (resolve, reject) {
             binance.openOrders(undefined, (error, orders) => {
                 if (error !== null)
                     reject(Error(error));
                 else {
-                    resolve(orders);
+                    exchangeInfo(balances, orders)
+                    resolve();
                 }
             })
-        });
+        }).then();
     } catch (err) {
+        new Promise(res => setTimeout(res, 10000)).finally(() => main());
         console.error(err)
     }
 }
 
-function exchangeInfo() {
+function exchangeInfo(balances, orders) {
     try {
-        return new Promise(function (resolve, reject) {
+        new Promise(function (resolve, reject) {
             binance.exchangeInfo((error, exchangeInfo) => {
                 if (error !== null)
                     reject(Error(error));
-                else resolve(
-                    Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
+                else {
+                    let currencies = Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
                         && !value.symbol.endsWith('DOWNUSDT')
                         && !value.symbol.endsWith('UPUSDT')
                         && !value.symbol.endsWith('BULLUSDT')
                         && !value.symbol.endsWith('BEARUSDT')
                         && value.status !== 'BREAK')
-                );
+                    candlesticks(currencies, balances, orders)
+                    resolve(true);
+                }
             })
-        });
+        }).then();
     } catch (err) {
+        new Promise(res => setTimeout(res, 10000)).finally(() => main());
         console.error(err)
     }
 }
 
-function candlesticks(currencies) {
+function candlesticks(currencies, balances, orders) {
     try {
-        return new Promise(function (resolve, reject) {
+        new Promise(function (resolve, reject) {
             let counter = 0
             Object.entries(currencies).forEach(function ([, [, value]]) {
                 binance.candlesticks(value.symbol, interval, (error, res) => {
@@ -106,19 +115,23 @@ function candlesticks(currencies) {
                         value.lenVol = minVolume.minQty.split('.')[0] === "0"
                             ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                        if (++counter === currencies.length) resolve(currencies);
+                        if (++counter === currencies.length) {
+                            noOrders(balances, currencies, orders)
+                            resolve(true);
+                        }
                     }
                 }, {limit: limit})
             })
-        });
+        }).then();
     } catch (err) {
+        new Promise(res => setTimeout(res, 10000)).finally(() => main());
         console.error(err)
     }
 }
 
-function noOrders(balances, currencies) {
+function noOrders(balances, currencies, orders) {
     try {
-        return new Promise(function (resolve,) {
+        new Promise(function (resolve,) {
             let counter = 0
             Object.entries(currencies).forEach(([, [, value]]) => {
                 if (balances[value['baseAsset']].available * value.price >= 1
@@ -126,17 +139,23 @@ function noOrders(balances, currencies) {
                     console.error(value.symbol + ' has units out of order: '
                         + (balances[value['baseAsset']].available * value.price) + '$')
 
-                if (++counter === Object.entries(currencies).length) resolve();
+                if (++counter === Object.entries(currencies).length) {
+
+                    buyLimit(currencies, balances, orders)
+                    resolve(true);
+                }
             })
-        });
+        }).then();
     } catch (err) {
+        new Promise(res => setTimeout(res, 10000)).finally(() => main());
         console.error(err)
     }
 }
 
-function buyLimit(currencies, balances, details, new_orders) {
+function buyLimit(currencies, balances, orders) {
     try {
-        return new Promise(function (resolve,) {
+        new Promise(function (resolve,) {
+            let details = [], new_orders = []
             let counter = 0, total = 0
             Object.entries(currencies).forEach(function ([, [, value]]) {
 
@@ -214,18 +233,23 @@ function buyLimit(currencies, balances, details, new_orders) {
                 total += value.price * Number(balances[value['baseAsset']].available)
                 total += value.price * Number(balances[value['baseAsset']].onOrder)
 
-                if (++counter === Object.entries(currencies).length) resolve(total);
+                if (++counter === Object.entries(currencies).length) {
+                    output(details, new_orders, currencies, balances, orders, total)
+                    resolve();
+                }
             });
-        });
+        }).then();
     } catch (err) {
+        new Promise(res => setTimeout(res, 10000)).finally(() => main());
         console.error(err)
     }
 }
 
-function output(details, new_orders, orders, currencies, balances, openOrders, total) {
+function output(details, new_orders, currencies, balances, openOrders, total) {
     if (details.length > 0) console.table(details.sort(
         (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
 
+    let orders = []
     Object.entries(openOrders).forEach(([, value]) => {
         let curr = currencies.filter(([, val]) => val.symbol === value.symbol)[0][1]
         orders.push(order(
@@ -247,27 +271,8 @@ function output(details, new_orders, orders, currencies, balances, openOrders, t
             'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
         }
     })
+
+    new Promise(res => setTimeout(res, 10000)).finally(() => main());
 }
 
-(async () => {
-    while (1) {
-        let new_orders = []
-        let details = []
-        let orders = []
-
-        try {
-            await balance().then(async function (balances) {
-            await openOrders().then(async function (openOrders) {
-            await exchangeInfo().then(async function (currencies) {
-            await candlesticks(currencies).then(async function (currencies) {
-            await noOrders(balances, currencies).then(async function () {
-            await buyLimit(currencies, balances, details, new_orders).then(function (total) {
-                output(details, new_orders, orders, currencies, balances, openOrders, total)
-            })})})})})});
-        } catch (err) {
-            console.error(err)
-        }
-
-        await new Promise(res => setTimeout(res, 10000));
-    }
-})();
+main()
