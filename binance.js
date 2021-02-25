@@ -205,9 +205,6 @@ function buyLimit(currencies, balances, orders) {
 }
 
 function output(details, new_orders, currencies, balances, openOrders, total) {
-    if (details.length > 0) console.table(details.sort(
-        (a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
-
     let orders = []
     Object.entries(openOrders).forEach(function ([, value]) {
         let curr = currencies.filter(([, val]) => val.symbol === value.symbol)[0][1]
@@ -222,7 +219,8 @@ function output(details, new_orders, currencies, balances, openOrders, total) {
         ))
     })
 
-    console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
+    if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
+    if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
     console.table({
         'Balance': {
