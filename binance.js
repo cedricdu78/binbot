@@ -55,7 +55,8 @@ function exchangeInfo(balances, orders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
             if (error !== null) throw new Error(error);
-            else candlesticks(Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith('USDT')
+            else candlesticks(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
+                value.symbol.endsWith('USDT')
                 && !value.symbol.endsWith('DOWNUSDT')
                 && !value.symbol.endsWith('UPUSDT')
                 && !value.symbol.endsWith('BULLUSDT')
