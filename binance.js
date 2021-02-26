@@ -101,14 +101,17 @@ function candlesticks(currencies, balances, orders) {
 
 function noOrders(balances, currencies, orders) {
     try {
-        let counter = 0
+        let counter = 0, total = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
             if (balances[value['baseAsset']].available * value.price >= 1
                 && value['baseAsset'] !== 'BNB')
                 console.error(value.symbol + ' has units out of order: '
                     + (balances[value['baseAsset']].available * value.price) + '$')
 
-            if (++counter === currencies.length) buyLimit(currencies, balances, orders)
+            total += value.price * Number(balances[value['baseAsset']].available)
+            total += value.price * Number(balances[value['baseAsset']].onOrder)
+
+            if (++counter === currencies.length) buyLimit(currencies, balances, orders, total)
         })
     } catch (err) {
         console.error(err)
@@ -116,10 +119,11 @@ function noOrders(balances, currencies, orders) {
     }
 }
 
-function buyLimit(currencies, balances, orders) {
+function buyLimit(currencies, balances, orders, total) {
     try {
         let details = [], new_orders = []
-        let counter = 0, total = 0
+        let counter = 0, mise = total * 4 / 100
+
         Object.entries(currencies).forEach(function ([, [, value]]) {
 
             if (Number(balances[value['baseAsset']].onOrder) === 0
@@ -193,9 +197,6 @@ function buyLimit(currencies, balances, orders) {
                 }
             }
 
-            total += value.price * Number(balances[value['baseAsset']].available)
-            total += value.price * Number(balances[value['baseAsset']].onOrder)
-
             if (++counter === currencies.length)
                 output(details, new_orders, currencies, balances, orders, total)
         });
@@ -236,7 +237,7 @@ function output(details, new_orders, currencies, balances, openOrders, total) {
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
-    mise = 120, profit = 110,
+    profit = 110,
     keep_balance = 0;
 
 function main() {
