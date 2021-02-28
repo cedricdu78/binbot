@@ -122,7 +122,7 @@ function noOrders(balances, currencies, orders) {
 function buyLimit(currencies, balances, orders, total) {
     try {
         let details = [], new_orders = []
-        let counter = 0, mise = total * 4 / 100
+        let counter = 0, count = 0, mise = total * 4 / 100
 
         Object.entries(currencies).forEach(function ([, [, value]]) {
 
@@ -154,7 +154,7 @@ function buyLimit(currencies, balances, orders, total) {
 
                 if (value.moy * (100 - b_median) / 100 <= value.price &&
                     value.moy * (100 - a_median) / 100 >= value.price &&
-                    value.price > 0 && prc >= 10 && prcm >= 10) {
+                    value.price > 0 && prc >= 10 && prcm >= 10 && ++count < 50) {
 
                     let volume = String(mise / value.price)
                     volume = volume.substr(0, volume.split('.')[0].length
@@ -171,7 +171,6 @@ function buyLimit(currencies, balances, orders, total) {
                                 + responseJson["msg"] + " " + price + " " + volume)
                         } else {
                             console.log(value.symbol + " buy")
-                            balances["USDT"].available -= mise
                             binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
                                 if (error !== null) {
                                     let responseJson = JSON.parse(error.body)
