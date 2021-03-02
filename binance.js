@@ -35,7 +35,7 @@ function balance() {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, 10000)).finally(() => main());
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
     }
 }
 
@@ -47,7 +47,7 @@ function openOrders(balances) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, 10000)).finally(() => main());
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
     }
 }
 
@@ -65,7 +65,7 @@ function exchangeInfo(balances, orders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, 10000)).finally(() => main());
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
     }
 }
 
@@ -95,7 +95,7 @@ function candlesticks(currencies, balances, orders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, 10000)).finally(() => main());
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
     }
 }
 
@@ -115,7 +115,7 @@ function noOrders(balances, currencies, orders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, 10000)).finally(() => main());
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
     }
 }
 
@@ -201,7 +201,7 @@ function buyLimit(currencies, balances, orders, total) {
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, 10000)).finally(() => main());
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
     }
 }
 
@@ -230,14 +230,14 @@ function output(details, new_orders, currencies, balances, openOrders, total) {
         }
     })
 
-    new Promise(res => setTimeout(res, 10000)).finally(() => main());
+    new Promise(res => setTimeout(res, refresh)).finally(() => main());
 }
 
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
     interval = "15m", limit = 673,
     a_median = 0, b_median = 20,
-    profit = 110,
-    keep_balance = 0;
+    profit = 110, keep_balance = 0,
+    refresh = 20000;
 
 function main() {
     balance();
