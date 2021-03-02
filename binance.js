@@ -119,10 +119,79 @@ function noOrders(balances, currencies, orders) {
     }
 }
 
-function buyLimit(currencies, balances, orders, total) {
+function buyLimit2(currencies, new_orders, total, details, balances, orders, mise) {
     try {
-        let details = [], new_orders = []
-        let counter = 0, count = 0, mise = total * 4 / 100
+        let counter = 0;
+
+        Object.entries(currencies).forEach(function ([, [, [, value]]]) {
+
+            let volume = String(mise / value.price)
+            volume = volume.substr(0, volume.split('.')[0].length
+                + (value.lenVol ? 1 : 0) + value.lenVol)
+
+            let price = String(value.price * profit / 100)
+            price = price.substr(0, price.split('.')[0].length
+                + (value.lenPrice ? 1 : 0) + value.lenPrice)
+
+            binance.marketBuy(value.symbol, volume, (error,) => {
+                if (error !== null) {
+                    let responseJson = JSON.parse(error.body)
+                    if (parseInt(responseJson.code) === -2010)
+                        console.log(value.symbol + " [" + responseJson.code + "]: "
+                            + responseJson["msg"] + " " + price + " " + volume)
+                    else console.error(value.symbol + " [" + responseJson.code + "]: "
+                            + responseJson["msg"] + " " + price + " " + volume)
+                } else {
+                    console.log(value.symbol + " buy")
+                    binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                        if (error !== null) {
+                            let responseJson = JSON.parse(error.body)
+                            console.error(value.symbol + " [" + responseJson.code + "]: "
+                                + responseJson["msg"] + " " + price + " " + volume)
+                        } else {
+                            console.log(value.symbol + " sell")
+
+                            new_orders.push(order(
+                                value.symbol,
+                                volume,
+                                price,
+                                value.price,
+                                value.price,
+                                Date.now(),
+                                0
+                            ))
+                            total += mise
+                        }
+                    })
+                }
+            })
+
+            if (++counter === currencies.length)
+                output(details, new_orders, currencies, balances, orders, total)
+        });
+    } catch (err) {
+        console.error(err)
+        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+    }
+}
+
+function buyLimit(currencies, balances, openOrders, total) {
+    try {
+        let  curr = [], details = [], new_orders = [], orders = []
+        let counter = 0, mise = total * 1 / 100;
+
+        Object.entries(openOrders).forEach(function ([, value]) {
+            let curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol === value.symbol)[0][1][1]
+            orders.push(order(
+                value.symbol,
+                value['origQty'],
+                value.price,
+                (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
+                curr.price,
+                value['time'],
+                100 - ((value.price - curr.price) / curr.price) * 100
+            ))
+        })
 
         Object.entries(currencies).forEach(function ([, [, value]]) {
 
@@ -147,57 +216,26 @@ function buyLimit(currencies, balances, orders, total) {
                     detail.prcm = Number(prcm.toFixed(0))
                     detail.bm = Number((value.moy * (100 - b_median) / 100).toFixed(6))
                     detail.am = Number((value.moy * (100 - a_median) / 100).toFixed(6))
-                    detail.amprice = Number(((value.price - (value.moy * (100 - a_median) / 100))
-                        / (value.moy * (100 - a_median) / 100)) * 100).toFixed(2)
+                    detail.amprice = Number((((value.price - (value.moy * (100 - a_median) / 100))
+                        / (value.moy * (100 - a_median) / 100)) * 100).toFixed(2))
                     details.push(detail)
+
+                    value.amprice = detail.amprice
                 }
 
-                if (value.moy * (100 - b_median) / 100 <= value.price &&
-                    value.moy * (100 - a_median) / 100 >= value.price &&
-                    value.price > 0 && prc >= 10 && prcm >= 10 && ++count < 50) {
-
-                    let volume = String(mise / value.price)
-                    volume = volume.substr(0, volume.split('.')[0].length
-                        + (value.lenVol ? 1 : 0) + value.lenVol)
-
-                    let price = String(value.price * profit / 100)
-                    price = price.substr(0, price.split('.')[0].length
-                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
-
-                    binance.marketBuy(value.symbol, volume, (error,) => {
-                        if (error !== null) {
-                            let responseJson = JSON.parse(error.body)
-                            console.error(value.symbol + " [" + responseJson.code + "]: "
-                                + responseJson["msg"] + " " + price + " " + volume)
-                        } else {
-                            console.log(value.symbol + " buy")
-                            binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
-                                if (error !== null) {
-                                    let responseJson = JSON.parse(error.body)
-                                    console.error(value.symbol + " [" + responseJson.code + "]: "
-                                        + responseJson["msg"] + " " + price + " " + volume)
-                                } else {
-                                    console.log(value.symbol + " sell")
-
-                                    new_orders.push(order(
-                                        value.symbol,
-                                        volume,
-                                        price,
-                                        value.price,
-                                        value.price,
-                                        Date.now(),
-                                        0
-                                    ))
-                                    total += mise
-                                }
-                            })
-                        }
-                    })
-                }
+                if (value.moy * (100 - b_median) / 100 > value.price
+                    || value.moy * (100 - a_median) / 100 < value.price
+                    || value.price <= 0 || prc < 10 || prcm < 10)
+                    curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol !== value.symbol)
             }
 
-            if (++counter === currencies.length)
-                output(details, new_orders, currencies, balances, orders, total)
+            if (++counter === currencies.length) {
+                curr = curr.filter(([, [, val]]) => val.amprice <= 0).sort((a, b) => a.amprice - b.amprice).slice(0, 30)
+                if (curr.length > 0)
+                    buyLimit2(curr, new_orders, total, details, balances, orders, mise)
+                else
+                    output(details, new_orders, currencies, balances, orders, total)
+            }
         });
     } catch (err) {
         console.error(err)
@@ -205,21 +243,7 @@ function buyLimit(currencies, balances, orders, total) {
     }
 }
 
-function output(details, new_orders, currencies, balances, openOrders, total) {
-    let orders = []
-    Object.entries(openOrders).forEach(function ([, value]) {
-        let curr = currencies.filter(([, val]) => val.symbol === value.symbol)[0][1]
-        orders.push(order(
-            value.symbol,
-            value['origQty'],
-            value.price,
-            (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
-            curr.price,
-            value['time'],
-            100 - ((value.price - curr.price) / curr.price) * 100
-        ))
-    })
-
+function output(details, new_orders, currencies, balances, orders, total) {
     if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
