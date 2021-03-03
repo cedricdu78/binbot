@@ -141,6 +141,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                             + responseJson["msg"] + " " + price + " " + volume)
                     else console.error(value.symbol + " [" + responseJson.code + "]: "
                             + responseJson["msg"] + " " + price + " " + volume)
+                    new Promise(res => setTimeout(res, refresh)).finally(() => main());
                 } else {
                     console.log(value.symbol + " buy")
                     binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
@@ -148,6 +149,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                             let responseJson = JSON.parse(error.body)
                             console.error(value.symbol + " [" + responseJson.code + "]: "
                                 + responseJson["msg"] + " " + price + " " + volume)
+                            new Promise(res => setTimeout(res, refresh)).finally(() => main());
                         } else {
                             console.log(value.symbol + " sell")
 
@@ -161,13 +163,13 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                                 0
                             ))
                             total += mise
+
+                            if (++counter === currencies.length)
+                                output(details, new_orders, currencies, balances, orders, total)
                         }
                     })
                 }
             })
-
-            if (++counter === currencies.length)
-                output(details, new_orders, currencies, balances, orders, total)
         });
     } catch (err) {
         console.error(err)
