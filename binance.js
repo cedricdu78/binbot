@@ -161,7 +161,8 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                                 Date.now(),
                                 0
                             ))
-                            total += mise
+
+                            balances["USDT"].available -= mise
 
                             if (++counter === currencies.length)
                                 output(details, new_orders, currencies, balances, orders, total)
