@@ -178,6 +178,9 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
 
 function buyLimit(currencies, balances, openOrders, total) {
     try {
+        total += Number(balances["USDT"].available)
+        total += Number(balances["USDT"].onOrder)
+
         let  curr = [], details = [], new_orders = [], orders = []
         let counter = 0, mise = total * 4 / 100;
 
@@ -251,7 +254,7 @@ function output(details, new_orders, currencies, balances, orders, total) {
     console.table({
         'Balance': {
             'Available': Number(Number(balances["USDT"].available).toFixed(2)),
-            'Total': Number((Number(total) + Number(balances["USDT"].available)).toFixed(2))
+            'Total': Number((Number(total)).toFixed(2))
         }
     })
 
