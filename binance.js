@@ -139,7 +139,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                         console.log(value.symbol + " [" + responseJson.code + "]: "
                             + responseJson["msg"] + " " + price + " " + volume)
                     else console.error(value.symbol + " [" + responseJson.code + "]: "
-                            + responseJson["msg"] + " " + price + " " + volume)
+                        + responseJson["msg"] + " " + price + " " + volume)
                     new Promise(res => setTimeout(res, refresh)).finally(() => main());
                 } else {
                     console.log(value.symbol + " buy")
@@ -194,7 +194,7 @@ function buyLimit(currencies, balances, openOrders, total) {
                 (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
                 curr.price,
                 value['time'],
-                100 - ((value.price - curr.price) / curr.price) * 100
+                (curr.price - value.price / (profit / 100)) / value.price / (profit / 100) * 100
             ))
         })
 
