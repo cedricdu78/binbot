@@ -19,9 +19,9 @@ function order(currency, volume, stopLoss, openValue, nowValue, timestamp, plusV
     const order = Object.create(null)
     order.currency = currency
     order.volume = Number(volume)
-    order.stopLoss = Number(stopLoss)
     order.openValue = Number(openValue)
     order.nowValue = Number(nowValue)
+    order.WantValue = Number(stopLoss)
     order.date = getDate(new Date(timestamp))
     order.plusValue = Number(plusValue.toFixed(2))
     return order
@@ -132,6 +132,10 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
             price = price.substr(0, price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
+            value.price = String(value.price * volume)
+            value.price = value.price.substr(0, value.price.split('.')[0].length
+                + (value.lenPrice ? 1 : 0) + value.lenPrice)
+
             binance.marketBuy(value.symbol, volume, (error,) => {
                 if (error !== null) {
                     let responseJson = JSON.parse(error.body)
@@ -155,7 +159,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                             new_orders.push(order(
                                 value.symbol,
                                 volume,
-                                price,
+                                price * volume,
                                 value.price,
                                 value.price,
                                 Date.now(),
@@ -187,12 +191,29 @@ function buyLimit(currencies, balances, openOrders, total) {
 
         Object.entries(openOrders).forEach(function ([, value]) {
             let curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol === value.symbol)[0][1][1]
+
+            let volume = String(value['origQty'])
+            volume = volume.substr(0, volume.split('.')[0].length
+                + (curr.lenVol ? 1 : 0) + curr.lenVol)
+
+            let openValue = String(value.price / (profit / 100))
+            openValue = openValue.substr(0, openValue.split('.')[0].length
+                + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
+
+            let wantValue = String(value.price)
+            wantValue = wantValue.substr(0, wantValue.split('.')[0].length
+                + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
+
+            let nowValue = String(curr.price)
+            nowValue = nowValue.substr(0, nowValue.split('.')[0].length
+                + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
+
             orders.push(order(
                 value.symbol,
-                value['origQty'],
-                value.price,
-                (value.price / (profit / 100)).toPrecision(String(Number(value.price)).length),
-                curr.price,
+                volume,
+                wantValue,
+                openValue,
+                nowValue,
                 value['time'],
                 (curr.price - value.price / (profit / 100)) / value.price / (profit / 100) * 100
             ))
