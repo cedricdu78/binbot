@@ -30,7 +30,7 @@ function order(currency, volume, stopLoss, openValue, nowValue, timestamp, plusV
 function balance() {
     try {
         binance.balance((error, balances) => {
-            if (error !== null) throw new Error(error);
+            if (error !== null) new Error(error);
             else openOrders(balances)
         })
     } catch (err) {
@@ -42,7 +42,7 @@ function balance() {
 function openOrders(balances) {
     try {
         binance.openOrders(undefined, (error, orders) => {
-            if (error !== null) throw new Error(error);
+            if (error !== null) new Error(error);
             else exchangeInfo(balances, orders)
         })
     } catch (err) {
@@ -54,7 +54,7 @@ function openOrders(balances) {
 function exchangeInfo(balances, orders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
-            if (error !== null) throw new Error(error);
+            if (error !== null) new Error(error);
             else candlesticks(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
                 value.symbol.endsWith('USDT')
                 && !value.symbol.endsWith('DOWNUSDT')
@@ -74,7 +74,7 @@ function candlesticks(currencies, balances, orders) {
         let counter = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
             binance.candlesticks(value.symbol, interval, (error, res) => {
-                if (error !== null) throw new Error(error);
+                if (error !== null) new Error(error);
                 else {
                     value.moy = []
                     res.forEach(function (val) {
