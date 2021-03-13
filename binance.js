@@ -196,15 +196,15 @@ function buyLimit(currencies, balances, openOrders, total) {
             volume = volume.substr(0, volume.split('.')[0].length
                 + (curr.lenVol ? 1 : 0) + curr.lenVol)
 
-            let openValue = String(value.price / (profit / 100))
+            let openValue = String(value.price / (profit / 100) * value['origQty'])
             openValue = openValue.substr(0, openValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
-            let wantValue = String(value.price)
+            let wantValue = String(value.price * value['origQty'])
             wantValue = wantValue.substr(0, wantValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
-            let nowValue = String(curr.price)
+            let nowValue = String(curr.price * value['origQty'])
             nowValue = nowValue.substr(0, nowValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
