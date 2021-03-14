@@ -290,14 +290,14 @@ function output(details, new_orders, currencies, balances, orders, total, open, 
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
     console.table({
-        'Trades': {
+        'Trades (USD)': {
             'Open': Number((Number(open)).toFixed(2)),
             'Now': Number((Number(now)).toFixed(2)),
             'Want': Number((Number(want)).toFixed(2))
         }
     })
     console.table({
-        'Balance': {
+        'Balance (USD)': {
             'USDT': Number(Number(balances["USDT"].available).toFixed(2)),
             'BNB': Number(Number(balances["BNB"].available).toFixed(2)),
             'Total': Number((Number(total)).toFixed(2))
