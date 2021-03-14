@@ -279,8 +279,8 @@ function buyLimit(currencies, balances, openOrders, total) {
                         else output(details, new_orders, balances, orders, total, open, now, want)
                     } else output(details, new_orders, balances, orders, total, open, now, want)
                 } else {
-                    console.error("STOP ! Veuillez acheter du BNB pour les frais")
                     output(details, new_orders, balances, orders, total, open, now, want)
+                    console.error("Veuillez acheter du BNB pour les frais")
                 }
             }
         });
