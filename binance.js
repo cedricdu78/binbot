@@ -111,7 +111,14 @@ function noOrders(balances, currencies, orders) {
             total += value.price * Number(balances[value['baseAsset']].available)
             total += value.price * Number(balances[value['baseAsset']].onOrder)
 
-            if (++counter === currencies.length) buyLimit(currencies, balances, orders, total)
+            if (value.symbol === "BNBUSDT")
+                balances["BNB"].available = balances["BNB"].available * value.price
+
+            if (++counter === currencies.length)
+                if (balances["BNB"].available > 1)
+                    buyLimit(currencies, balances, orders, total)
+                else
+                    console.error("STOP ! Veuillez acheter du BNB pour les frais")
         })
     } catch (err) {
         console.error(err)
@@ -143,12 +150,8 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
             binance.marketBuy(value.symbol, volume, (error,) => {
                 if (error !== null) {
                     let responseJson = JSON.parse(error.body)
-                    if (parseInt(responseJson.code) === -2010)
-                        console.log(value.symbol + " [" + responseJson.code + "]: "
-                            + responseJson["msg"] + " " + price + " " + volume)
-                    else console.error(value.symbol + " [" + responseJson.code + "]: "
-                        + responseJson["msg"] + " " + price + " " + volume)
-                    new Promise(res => setTimeout(res, refresh)).finally(() => main());
+                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                        + " " + volume)
                 } else {
                     console.log(value.symbol + " buy")
                     binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
@@ -156,7 +159,6 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                             let responseJson = JSON.parse(error.body)
                             console.error(value.symbol + " [" + responseJson.code + "]: "
                                 + responseJson["msg"] + " " + price + " " + volume)
-                            new Promise(res => setTimeout(res, refresh)).finally(() => main());
                         } else {
                             console.log(value.symbol + " sell")
 
@@ -288,11 +290,16 @@ function output(details, new_orders, currencies, balances, orders, total, open, 
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
     console.table({
-        'Balance': {
-            'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+        'Trades': {
             'Open': Number((Number(open)).toFixed(2)),
             'Now': Number((Number(now)).toFixed(2)),
-            'Want': Number((Number(want)).toFixed(2)),
+            'Want': Number((Number(want)).toFixed(2))
+        }
+    })
+    console.table({
+        'Balance': {
+            'USDT': Number(Number(balances["USDT"].available).toFixed(2)),
+            'BNB': Number(Number(balances["BNB"].available).toFixed(2)),
             'Total': Number((Number(total)).toFixed(2))
         }
     })
