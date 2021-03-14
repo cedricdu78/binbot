@@ -267,9 +267,15 @@ function buyLimit(currencies, balances, openOrders, total) {
             }
 
             if (++counter === currencies.length) {
+                let curr2 = []
+                curr = curr.filter(([, [, val]]) => val.amprice <= 0)
+                Object.entries(curr).forEach(([, [, [, v]]]) => {
+                    curr2.push(v)
+                })
+
                 let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
                 if (nbMise > 0) {
-                    curr = curr.filter(([, [, val]]) => val.amprice <= 0).sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
+                    curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
                     if (curr.length > 0)
                         buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
                     else
