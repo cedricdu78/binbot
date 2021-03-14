@@ -115,10 +115,7 @@ function noOrders(balances, currencies, orders) {
                 balances["BNB"].available = balances["BNB"].available * value.price
 
             if (++counter === currencies.length)
-                if (balances["BNB"].available > 1)
-                    buyLimit(currencies, balances, orders, total)
-                else
-                    console.error("STOP ! Veuillez acheter du BNB pour les frais")
+                buyLimit(currencies, balances, orders, total)
         })
     } catch (err) {
         console.error(err)
@@ -175,7 +172,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                             balances["USDT"].available -= mise
 
                             if (++counter === currencies.length)
-                                output(details, new_orders, currencies, balances, orders, total, open, now, want)
+                                output(details, new_orders, balances, orders, total, open, now, want)
                         }
                     })
                 }
@@ -273,16 +270,18 @@ function buyLimit(currencies, balances, openOrders, total) {
                     curr2.push(v)
                 })
 
-                let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
-                if (nbMise > 0) {
-                    curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
-                    if (curr.length > 0)
-                        buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                    else
-                        output(details, new_orders, currencies, balances, orders, total, open, now, want)
+                if (balances["BNB"].available > 1) {
+                    let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
+                    if (nbMise > 0) {
+                        curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
+                        if (curr.length > 0)
+                            buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
+                        else output(details, new_orders, balances, orders, total, open, now, want)
+                    } else output(details, new_orders, balances, orders, total, open, now, want)
+                } else {
+                    console.error("STOP ! Veuillez acheter du BNB pour les frais")
+                    output(details, new_orders, balances, orders, total, open, now, want)
                 }
-                else
-                    output(details, new_orders, currencies, balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
@@ -291,7 +290,7 @@ function buyLimit(currencies, balances, openOrders, total) {
     }
 }
 
-function output(details, new_orders, currencies, balances, orders, total, open, now, want) {
+function output(details, new_orders, balances, orders, total, open, now, want) {
     if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
