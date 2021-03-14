@@ -119,7 +119,7 @@ function noOrders(balances, currencies, orders) {
     }
 }
 
-function buyLimit2(currencies, new_orders, total, details, balances, orders, mise) {
+function buyLimit2(currencies, new_orders, total, details, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
         Object.entries(currencies).forEach(function ([, [, [, value]]]) {
@@ -135,6 +135,10 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
             value.price = String(value.price * volume)
             value.price = value.price.substr(0, value.price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
+
+            open += Number(value.price)
+            now += Number(value.price)
+            want += Number(price * volume)
 
             binance.marketBuy(value.symbol, volume, (error,) => {
                 if (error !== null) {
@@ -169,7 +173,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                             balances["USDT"].available -= mise
 
                             if (++counter === currencies.length)
-                                output(details, new_orders, currencies, balances, orders, total)
+                                output(details, new_orders, currencies, balances, orders, total, open, now, want)
                         }
                     })
                 }
@@ -183,11 +187,12 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
 
 function buyLimit(currencies, balances, openOrders, total) {
     try {
+
         total += Number(balances["USDT"].available)
         total += Number(balances["USDT"].onOrder)
 
         let  curr = [], details = [], new_orders = [], orders = []
-        let counter = 0, mise = total * 4 / 100;
+        let counter = 0, open = 0, now = 0, want = 0, mise = total * 4 / 100;
 
         Object.entries(openOrders).forEach(function ([, value]) {
             let curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol === value.symbol)[0][1][1]
@@ -200,13 +205,17 @@ function buyLimit(currencies, balances, openOrders, total) {
             openValue = openValue.substr(0, openValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
+            let nowValue = String(curr.price * value['origQty'])
+            nowValue = nowValue.substr(0, nowValue.split('.')[0].length
+                + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
+
             let wantValue = String(value.price * value['origQty'])
             wantValue = wantValue.substr(0, wantValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
-            let nowValue = String(curr.price * value['origQty'])
-            nowValue = nowValue.substr(0, nowValue.split('.')[0].length
-                + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
+            open += Number(openValue)
+            now += Number(nowValue)
+            want += Number(wantValue)
 
             orders.push(order(
                 value.symbol,
@@ -260,12 +269,12 @@ function buyLimit(currencies, balances, openOrders, total) {
                 if (nbMise > 0) {
                     curr = curr.filter(([, [, val]]) => val.amprice <= 0).sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
                     if (curr.length > 0)
-                        buyLimit2(curr, new_orders, total, details, balances, orders, mise)
+                        buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
                     else
-                        output(details, new_orders, currencies, balances, orders, total)
+                        output(details, new_orders, currencies, balances, orders, total, open, now, want)
                 }
                 else
-                    output(details, new_orders, currencies, balances, orders, total)
+                    output(details, new_orders, currencies, balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
@@ -274,13 +283,16 @@ function buyLimit(currencies, balances, openOrders, total) {
     }
 }
 
-function output(details, new_orders, currencies, balances, orders, total) {
+function output(details, new_orders, currencies, balances, orders, total, open, now, want) {
     if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
     console.table({
         'Balance': {
             'Available': Number(Number(balances["USDT"].available).toFixed(2)),
+            'Open': Number((Number(open)).toFixed(2)),
+            'Now': Number((Number(now)).toFixed(2)),
+            'Want': Number((Number(want)).toFixed(2)),
             'Total': Number((Number(total)).toFixed(2))
         }
     })
