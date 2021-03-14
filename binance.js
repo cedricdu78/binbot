@@ -126,7 +126,7 @@ function noOrders(balances, currencies, orders) {
 function buyLimit2(currencies, new_orders, total, details, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
-        Object.entries(currencies).forEach(function ([, [, [, value]]]) {
+        Object.entries(currencies).forEach(function ([, value]) {
 
             let volume = String(mise / value.price)
             volume = volume.substr(0, volume.split('.')[0].length
