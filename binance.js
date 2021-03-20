@@ -140,43 +140,48 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
             value.price = value.price.substr(0, value.price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-            open += Number(value.price)
-            now += Number(value.price)
-            want += Number(price * volume)
+            if (balances["BNB"].available > (value.price * 0.0750 / 100)) {
+                open += Number(value.price)
+                now += Number(value.price)
+                want += Number(price * volume)
 
-            binance.marketBuy(value.symbol, volume, (error,) => {
-                if (error !== null) {
-                    let responseJson = JSON.parse(error.body)
-                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
-                        + " " + volume)
-                } else {
-                    console.log(value.symbol + " buy")
-                    binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
-                        if (error !== null) {
-                            let responseJson = JSON.parse(error.body)
-                            console.error(value.symbol + " [" + responseJson.code + "]: "
-                                + responseJson["msg"] + " " + price + " " + volume)
-                        } else {
-                            console.log(value.symbol + " sell")
+                binance.marketBuy(value.symbol, volume, (error,) => {
+                    if (error !== null) {
+                        let responseJson = JSON.parse(error.body)
+                        console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                            + " " + volume)
+                    } else {
+                        console.log(value.symbol + " buy")
+                        binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                            if (error !== null) {
+                                let responseJson = JSON.parse(error.body)
+                                console.error(value.symbol + " [" + responseJson.code + "]: "
+                                    + responseJson["msg"] + " " + price + " " + volume)
+                            } else {
+                                console.log(value.symbol + " sell")
 
-                            new_orders.push(order(
-                                value.symbol,
-                                volume,
-                                price * volume,
-                                value.price,
-                                value.price,
-                                Date.now(),
-                                0
-                            ))
+                                new_orders.push(order(
+                                    value.symbol,
+                                    volume,
+                                    price * volume,
+                                    value.price,
+                                    value.price,
+                                    Date.now(),
+                                    0
+                                ))
 
-                            balances["USDT"].available -= mise
+                                balances["USDT"].available -= mise
 
-                            if (++counter === currencies.length)
-                                output(details, new_orders, balances, orders, total, open, now, want)
-                        }
-                    })
-                }
-            })
+                                if (++counter === currencies.length)
+                                    output(details, new_orders, balances, orders, total, open, now, want)
+                            }
+                        })
+                    }
+                })
+            } else {
+                output(details, new_orders, balances, orders, total, open, now, want)
+                console.error("Veuillez acheter du BNB pour les frais")
+            }
         });
     } catch (err) {
         console.error(err)
@@ -190,7 +195,7 @@ function buyLimit(currencies, balances, openOrders, total) {
         total += Number(balances["USDT"].available)
         total += Number(balances["USDT"].onOrder)
 
-        let  curr = [], details = [], new_orders = [], orders = []
+        let curr = [], details = [], new_orders = [], orders = []
         let counter = 0, open = 0, now = 0, want = 0, mise = total * 4 / 100;
 
         Object.entries(openOrders).forEach(function ([, value]) {
@@ -270,18 +275,13 @@ function buyLimit(currencies, balances, openOrders, total) {
                     curr2.push(v)
                 })
 
-                if (balances["BNB"].available > 1) {
-                    let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
-                    if (nbMise > 0) {
-                        curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
-                        if (curr.length > 0)
-                            buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                        else output(details, new_orders, balances, orders, total, open, now, want)
-                    } else output(details, new_orders, balances, orders, total, open, now, want)
-                } else {
-                    output(details, new_orders, balances, orders, total, open, now, want)
-                    console.error("Veuillez acheter du BNB pour les frais")
-                }
+                let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
+                if (nbMise > 0) {
+                    curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
+                    if (curr.length > 0)
+                        buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
+                    else output(details, new_orders, balances, orders, total, open, now, want)
+                } else output(details, new_orders, balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
