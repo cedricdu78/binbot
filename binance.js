@@ -301,8 +301,6 @@ function output(details, new_orders, balances, orders, total, open, now, want) {
     })
     console.table({
         'Balance (USD)': {
-            'USDT': Number(Number(balances["USDT"].available).toFixed(2)),
-            'BNB': Number(Number(balances["BNB"].available).toFixed(2)),
             'Open': Number((Number(open)
                 + Number(balances["USDT"].available)
                 + Number(balances["BNB"].available)
@@ -314,7 +312,9 @@ function output(details, new_orders, balances, orders, total, open, now, want) {
             'Want': Number((Number(want)
                 + Number(balances["USDT"].available)
                 + Number(balances["BNB"].available)
-            ).toFixed(2))
+            ).toFixed(2)),
+            'USDT': Number(Number(balances["USDT"].available).toFixed(2)),
+            'BNB': Number(Number(balances["BNB"].available).toFixed(2))
         }
     })
 
