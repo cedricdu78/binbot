@@ -297,24 +297,30 @@ function output(details, new_orders, balances, orders, total, open, now, want) {
             'Placed': Number((Number(open)).toFixed(2)),
             'Current': Number((Number(now)).toFixed(2)),
             'Target': Number((Number(want)).toFixed(2))
-        }
-    })
-    console.table({
-        'Balance (USD)': {
-            'Open': Number((Number(open)
+        },
+        'USDT (USD)': {
+            'Placed': Number(Number(balances["USDT"].available).toFixed(2)),
+            'Current': Number(Number(balances["USDT"].available).toFixed(2)),
+            'Target': Number(Number(balances["USDT"].available).toFixed(2))
+        },
+        'BNB (USD)': {
+            'Placed': Number(Number(balances["BNB"].available).toFixed(2)),
+            'Current': Number(Number(balances["BNB"].available).toFixed(2)),
+            'Target': Number(Number(balances["BNB"].available).toFixed(2))
+        },
+        'Total (USD)': {
+            'Placed': Number((Number(open)
                 + Number(balances["USDT"].available)
                 + Number(balances["BNB"].available)
             ).toFixed(2)),
-            'Now': Number((Number(now)
+            'Current': Number((Number(now)
                 + Number(balances["USDT"].available)
                 + Number(balances["BNB"].available)
             ).toFixed(2)),
-            'Want': Number((Number(want)
+            'Target': Number((Number(want)
                 + Number(balances["USDT"].available)
                 + Number(balances["BNB"].available)
-            ).toFixed(2)),
-            'USDT': Number(Number(balances["USDT"].available).toFixed(2)),
-            'BNB': Number(Number(balances["BNB"].available).toFixed(2))
+            ).toFixed(2))
         }
     })
 
