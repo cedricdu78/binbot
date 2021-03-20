@@ -140,7 +140,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
             value.price = value.price.substr(0, value.price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-            if (balances["BNB"].available > (value.price * 0.0750 / 100)) {
+            if (balances["BNB"].available > (value.price * 0.15 / 100)) {
                 open += Number(value.price)
                 now += Number(value.price)
                 want += Number(price * volume)
