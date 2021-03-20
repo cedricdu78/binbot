@@ -171,6 +171,7 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                                 ))
 
                                 balances["USDT"].available -= mise
+                                balances["BNB"].available -= value.price * 0.0750 / 100
 
                                 if (++counter === currencies.length)
                                     output(details, new_orders, balances, orders, total, open, now, want)
