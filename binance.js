@@ -294,9 +294,9 @@ function output(details, new_orders, balances, orders, total, open, now, want) {
     if (new_orders.length > 0) console.table(new_orders)
     console.table({
         'Trades (USD)': {
-            'Open': Number((Number(open)).toFixed(2)),
-            'Now': Number((Number(now)).toFixed(2)),
-            'Want': Number((Number(want)).toFixed(2))
+            'Placed': Number((Number(open)).toFixed(2)),
+            'Current': Number((Number(now)).toFixed(2)),
+            'Target': Number((Number(want)).toFixed(2))
         }
     })
     console.table({
