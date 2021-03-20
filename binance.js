@@ -151,15 +151,12 @@ function buyLimit2(currencies, new_orders, total, details, balances, orders, mis
                         console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
                             + " " + volume)
                     } else {
-                        console.log(value.symbol + " buy")
                         binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
                             if (error !== null) {
                                 let responseJson = JSON.parse(error.body)
                                 console.error(value.symbol + " [" + responseJson.code + "]: "
                                     + responseJson["msg"] + " " + price + " " + volume)
                             } else {
-                                console.log(value.symbol + " sell")
-
                                 new_orders.push(order(
                                     value.symbol,
                                     volume,
