@@ -275,7 +275,7 @@ function buyLimit(currencies, balances, openOrders, total) {
 
                 let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
                 if (nbMise > 0) {
-                    curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise)
+                    curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
                         buyLimit2(curr, new_orders, total, details, balances, orders, mise, open, now, want)
                     else output(details, new_orders, balances, orders, total, open, now, want)
