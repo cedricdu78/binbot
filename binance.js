@@ -233,8 +233,7 @@ function buyLimit(currencies, balances, openOrders, total) {
         Object.entries(currencies).forEach(function ([, [, value]]) {
 
             if (Number(balances[value['baseAsset']].onOrder) === 0
-                && Number(balances[value['baseAsset']].available) === 0
-                && Number(balances["USDT"].available) >= (keep_balance + mise)) {
+                && Number(balances[value['baseAsset']].available) === 0) {
 
                 let min = Math.min.apply(null, value.moy)
                 let max = Math.max.apply(null, value.moy)
@@ -255,7 +254,9 @@ function buyLimit(currencies, balances, openOrders, total) {
                     detail.am = Number((value.moy * (100 - a_median) / 100).toFixed(6))
                     detail.amprice = Number((((value.price - (value.moy * (100 - a_median) / 100))
                         / (value.moy * (100 - a_median) / 100)) * 100).toFixed(2))
-                    details.push(detail)
+
+                    if (detail.amprice <= 0)
+                        details.push(detail)
 
                     value.amprice = detail.amprice
                 }
@@ -289,9 +290,9 @@ function buyLimit(currencies, balances, openOrders, total) {
 }
 
 function output(details, new_orders, balances, orders, total, open, now, want) {
-    if (details.length > 0) console.table(details.sort((a, b) => a.amprice - b.amprice).slice(0, 14).reverse())
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
+    if (details.length > 0) console.table({Possibility: details.length})
     console.table({
         'Trades (USD)': {
             'Placed': Number((Number(open)).toFixed(2)),
