@@ -8,11 +8,11 @@ const binance = new Binance().options({
     APISECRET: binSecret.secret()
 });
 
-function balance() {
+function getBalance() {
     try {
         binance.balance((error, balances) => {
             if (error !== null) new Error(error);
-            else openOrders(balances)
+            else getOpenOrders(balances)
         })
     } catch (err) {
         console.error(err)
@@ -20,11 +20,11 @@ function balance() {
     }
 }
 
-function openOrders(balances) {
+function getOpenOrders(balances) {
     try {
         binance.openOrders(undefined, (error, orders) => {
             if (error !== null) new Error(error);
-            else exchangeInfo(balances, orders)
+            else getCurrencies(balances, orders)
         })
     } catch (err) {
         console.error(err)
@@ -32,11 +32,11 @@ function openOrders(balances) {
     }
 }
 
-function exchangeInfo(balances, orders) {
+function getCurrencies(balances, orders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
             if (error !== null) new Error(error);
-            else candlesticks(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
+            else getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
                 value.symbol.endsWith(config.baseMoney())
                 && !value.symbol.endsWith('DOWN' + config.baseMoney())
                 && !value.symbol.endsWith('UP' + config.baseMoney())
@@ -50,7 +50,7 @@ function exchangeInfo(balances, orders) {
     }
 }
 
-function candlesticks(currencies, balances, orders) {
+function getHistories(currencies, balances, orders) {
     try {
         let counter = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -70,7 +70,7 @@ function candlesticks(currencies, balances, orders) {
                     value.lenVol = minVolume.minQty.split('.')[0] === "0"
                         ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                    if (++counter === currencies.length) noOrders(balances, currencies, orders)
+                    if (++counter === currencies.length) getNoOrders(balances, currencies, orders)
                 }
             }, {limit: config.interval()[1]})
         })
@@ -80,7 +80,7 @@ function candlesticks(currencies, balances, orders) {
     }
 }
 
-function noOrders(balances, currencies, orders) {
+function getNoOrders(balances, currencies, orders) {
     try {
         let counter = 0, total = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -152,13 +152,13 @@ function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances,
                                 balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
 
                                 if (++counter === curr.length)
-                                    output(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                                    getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                             }
                         })
                     }
                 })
             } else {
-                output(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                 console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
             }
         });
@@ -248,8 +248,8 @@ function prepareBuy(currencies, balances, openOrders, total) {
                     curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
                         buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                    else output(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-                } else output(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                    else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                } else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
@@ -258,7 +258,7 @@ function prepareBuy(currencies, balances, openOrders, total) {
     }
 }
 
-function output(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
+function getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
     if (details.length > 0) console.table({
@@ -299,7 +299,7 @@ function output(currencies, curr, details, new_orders, balances, orders, total, 
 }
 
 function main() {
-    balance();
+    getBalance();
 }
 
 main()
