@@ -8,6 +8,7 @@ const binance = new Binance().options({
     APISECRET: binSecret.secret()
 });
 
+// get balance of account
 function gB() {
     try {
         binance.balance((error, balances) => {
@@ -20,6 +21,7 @@ function gB() {
     }
 }
 
+// get open order
 function gOO(balances) {
     try {
         binance.openOrders(undefined, (error, orders) => {
@@ -32,6 +34,7 @@ function gOO(balances) {
     }
 }
 
+// get currencies available
 function gC(balances, orders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
@@ -50,6 +53,7 @@ function gC(balances, orders) {
     }
 }
 
+// get history per currency
 function gH(currencies, balances, orders) {
     try {
         let counter = 0
@@ -80,6 +84,7 @@ function gH(currencies, balances, orders) {
     }
 }
 
+// get currency without order
 function gNO(balances, currencies, orders) {
     try {
         let counter = 0, total = 0
@@ -104,6 +109,7 @@ function gNO(balances, currencies, orders) {
     }
 }
 
+// buy currency
 function bL(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
@@ -168,6 +174,7 @@ function bL(currencies, curr, new_orders, total, details, BuyNb, balances, order
     }
 }
 
+// Remove cryptocurrencies that do not match the purchase condition
 function pB(currencies, balances, openOrders, total) {
     try {
 
@@ -258,11 +265,7 @@ function pB(currencies, balances, openOrders, total) {
     }
 }
 
-function gT(arr) {
-    if (arr.length > 0)
-        console.table(arr)
-}
-
+// Return status of orders, balances and cryptos
 function gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
 
     const stateCurrencies = {
@@ -301,12 +304,13 @@ function gO(currencies, curr, details, new_orders, balances, orders, total, open
         }
     }
 
-    gT(orders.sort((a, b) => b.plusValue - a.plusValue))
-    gT(new_orders)
+    if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
+    if (new_orders.length > 0) console.table(new_orders)
     console.table(stateCurrencies)
     console.table(stateBalance)
 
     new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
 }
 
+// Start bot
 gB();
