@@ -1,6 +1,6 @@
 const binSecret = require('./config/secrets');
 const config = require('./config/config');
-const func = require('./class/func');
+const func = require('./lib/func');
 
 const Binance = require('node-binance-api');
 const binance = new Binance().options({
