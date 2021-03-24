@@ -214,7 +214,7 @@ function pB(currencies, balances, openOrders, total) {
                 openValue,
                 nowValue,
                 value['time'],
-                (curr.price - value.price / (config.profit() / 100 + 1)) / value.price / (config.profit() / 100 + 1) * 100
+                (nowValue / openValue * 100) - 100
             ))
         })
 
