@@ -262,35 +262,35 @@ function getOutput(currencies, curr, details, new_orders, balances, orders, tota
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
     console.table({
-        'currencies': {
-            'available': details.length, 'total': currencies.length,
+        [config.colCrypto()[0]]: {
+            [config.colCrypto()[1]]: details.length, [config.colCrypto()[2]]: currencies.length,
             '%': Number((details.length / currencies.length * 100).toFixed(0)),
-            'Rapport': 'Marché ' + (Number((details.length / currencies.length * 100).toFixed(0)) > 20
-                ? 'baissier' : 'haussier')
+            [config.colCrypto()[3]]: config.colCrypto()[4] + ' ' + (Number((details.length / currencies.length * 100).toFixed(0)) > 20
+                ? config.colCrypto()[5] : config.colCrypto()[6])
         }
     })
     console.table({
         ['Trades (' + config.baseSymbol() + ')']: {
-            'Placed': Number((Number(open)).toFixed(2)),
-            'Current': Number((Number(now)).toFixed(2)),
-            'Target': Number((Number(want)).toFixed(2))
+            [config.colResume()[0]]: Number((Number(open)).toFixed(2)),
+            [config.colResume()[1]]: Number((Number(now)).toFixed(2)),
+            [config.colResume()[2]]: Number((Number(want)).toFixed(2))
         },
         [config.baseMoney() + ' (' + config.baseSymbol() + ')']: {
-            'Placed': Number(Number(balances[config.baseMoney()].available).toFixed(2)),
-            'Current': Number(Number(balances[config.baseMoney()].available).toFixed(2)),
-            'Target': Number(Number(balances[config.baseMoney()].available).toFixed(2))
+            [config.colResume()[0]]: Number(Number(balances[config.baseMoney()].available).toFixed(2)),
+            [config.colResume()[1]]: Number(Number(balances[config.baseMoney()].available).toFixed(2)),
+            [config.colResume()[2]]: Number(Number(balances[config.baseMoney()].available).toFixed(2))
         },
         [config.feeMoney() + ' (' + config.baseSymbol() + ')']: {
-            'Placed': Number(Number(balances[config.feeMoney()].available).toFixed(2)),
-            'Current': Number(Number(balances[config.feeMoney()].available).toFixed(2)),
-            'Target': Number(Number(balances[config.feeMoney()].available).toFixed(2))
+            [config.colResume()[0]]: Number(Number(balances[config.feeMoney()].available).toFixed(2)),
+            [config.colResume()[1]]: Number(Number(balances[config.feeMoney()].available).toFixed(2)),
+            [config.colResume()[2]]: Number(Number(balances[config.feeMoney()].available).toFixed(2))
         },
         ['Total (' + config.baseSymbol() + ')']: {
-            'Placed': Number((Number(open) + Number(balances[config.baseMoney()].available)
+            [config.colResume()[0]]: Number((Number(open) + Number(balances[config.baseMoney()].available)
                 + Number(balances[config.feeMoney()].available)).toFixed(2)),
-            'Current': Number((Number(now) + Number(balances[config.baseMoney()].available)
+            [config.colResume()[1]]: Number((Number(now) + Number(balances[config.baseMoney()].available)
                 + Number(balances[config.feeMoney()].available)).toFixed(2)),
-            'Target': Number((Number(want) + Number(balances[config.baseMoney()].available)
+            [config.colResume()[2]]: Number((Number(want) + Number(balances[config.baseMoney()].available)
                 + Number(balances[config.feeMoney()].available)).toFixed(2))
         }
     })

@@ -38,6 +38,12 @@ module.exports = {
         return 0.15 // fee value with BNB is 0.750 but for security 0.15
     },
 
+    colResume: function () {
+        return ["Placed", "Current", "Target"] // column name in console output
+    },
+    colCrypto: function () {
+        return ["Currencies", "Available", "Total", "Rapport", "Marché", "baissier", "haussier"] // column name in console output
+    },
     refresh: function () {
         return 20000 // 20s avant de relancer le bot (en ms)
     }
