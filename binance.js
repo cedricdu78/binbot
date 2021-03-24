@@ -125,36 +125,32 @@ function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances,
                 now += Number(value.price)
                 want += Number(price * volume)
 
-                binance.marketBuy(value.symbol, volume, (error,) => {
-                    if (error !== null) {
+                binance.marketBuy(value.symbol, volume).then(() => {
+                    binance.sell(value.symbol, volume, price, {type: 'LIMIT'}).then(() => {
+                        new_orders.push(func.order(
+                            value.symbol,
+                            volume,
+                            price * volume,
+                            value.price,
+                            value.price,
+                            Date.now(),
+                            0
+                        ))
+
+                        balances[config.baseMoney()].available -= mise
+                        balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
+                    }).catch(error => {
                         let responseJson = JSON.parse(error.body)
                         console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
                             + " " + volume)
-                    } else {
-                        binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
-                            if (error !== null) {
-                                let responseJson = JSON.parse(error.body)
-                                console.error(value.symbol + " [" + responseJson.code + "]: "
-                                    + responseJson["msg"] + " " + price + " " + volume)
-                            } else {
-                                new_orders.push(func.order(
-                                    value.symbol,
-                                    volume,
-                                    price * volume,
-                                    value.price,
-                                    value.price,
-                                    Date.now(),
-                                    0
-                                ))
-
-                                balances[config.baseMoney()].available -= mise
-                                balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
-
-                                if (++counter === curr.length)
-                                    getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-                            }
-                        })
-                    }
+                    })
+                }).catch(error => {
+                    let responseJson = JSON.parse(error.body)
+                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                        + " " + volume)
+                }).finally(() => {
+                    if (++counter === curr.length)
+                        getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                 })
             } else {
                 getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
@@ -175,41 +171,40 @@ function prepareBuying(currencies, balances, openOrders, total) {
 
         Object.entries(currencies).forEach(function ([, value]) {
 
-            Object.entries(openOrders).forEach(function ([, val]) {
+            let val = Object.entries(openOrders).filter(([, val]) => val.symbol === value.symbol)
+            if (val.length > 0) {
+                val = val[0][1]
 
-                if (value.symbol === val.symbol) {
-                    let volume = String(val['origQty'])
-                    volume = volume.substr(0, volume.split('.')[0].length
-                        + (value.lenVol ? 1 : 0) + value.lenVol)
+                let volume = String(val['origQty'])
+                volume = volume.substr(0, volume.split('.')[0].length
+                    + (value.lenVol ? 1 : 0) + value.lenVol)
 
-                    let openValue = String(val.price / (config.profit() / 100 + 1) * val['origQty'])
-                    openValue = openValue.substr(0, openValue.split('.')[0].length
-                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
+                let openValue = String(val.price / (config.profit() / 100 + 1) * val['origQty'])
+                openValue = openValue.substr(0, openValue.split('.')[0].length
+                    + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                    let nowValue = String(value.price * val['origQty'])
-                    nowValue = nowValue.substr(0, nowValue.split('.')[0].length
-                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
+                let nowValue = String(value.price * val['origQty'])
+                nowValue = nowValue.substr(0, nowValue.split('.')[0].length
+                    + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                    let wantValue = String(val.price * val['origQty'])
-                    wantValue = wantValue.substr(0, wantValue.split('.')[0].length
-                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
+                let wantValue = String(val.price * val['origQty'])
+                wantValue = wantValue.substr(0, wantValue.split('.')[0].length
+                    + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                    open += Number(openValue)
-                    now += Number(nowValue)
-                    want += Number(wantValue)
+                open += Number(openValue)
+                now += Number(nowValue)
+                want += Number(wantValue)
 
-                    orders.push(func.order(
-                        value.symbol,
-                        volume,
-                        wantValue,
-                        openValue,
-                        nowValue,
-                        val['time'],
-                        (nowValue / openValue * 100) - 100
-                    ))
-                }
-            })
-
+                orders.push(func.order(
+                    value.symbol,
+                    volume,
+                    wantValue,
+                    openValue,
+                    nowValue,
+                    val['time'],
+                    (nowValue / openValue * 100) - 100
+                ))
+            }
 
             if (Number(balances[value['baseAsset']].onOrder) === 0
                 && Number(balances[value['baseAsset']].available) === 0) {
