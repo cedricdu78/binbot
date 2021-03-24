@@ -23,7 +23,19 @@ module.exports = {
     feeMoney: function () {
         return "BNB" // use BNB for payement fee trading because -50%
     },
+    feeValue: function() {
+        return 0.15 // fee value with BNB is 0.750 but for security 0.15
+    },
     noOrder: function () {
         return 1 // retourne les cryptos qui n'ont pas d'ordre et dont la valeurs est supérieur ou égale à 1$
+    },
+    mise: function () {
+        return 4 // la mise est de 4% de votre solde total (pour 4000$ de solde spot, mise de 160$)
+    },
+    prc: function () {
+        return 10 // pourcentage de différence entre le minimum et le max sur la semaine
+    },
+    prcm: function () {
+        return 10 // pourcentage de différence entre le minimum et la moyenne sur la semaine
     }
 }
