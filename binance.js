@@ -216,13 +216,11 @@ function pB(currencies, balances, openOrders, total) {
             if (Number(balances[value['baseAsset']].onOrder) === 0
                 && Number(balances[value['baseAsset']].available) === 0) {
 
-                let min = Math.min.apply(null, value.moy)
                 let max = Math.max.apply(null, value.moy)
                 value.moy = func.lAvg(value.moy)
-                let prc_m = ((max - value.moy) / value.moy) * 100
-                let prc = ((max - min) / min) * 100
+                let prc = ((max - value.moy) / value.moy) * 100
 
-                if (prc >= config.prc() && prc_m >= config.prc_m()) {
+                if (prc >= config.prc()) {
                     value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
                         / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 
@@ -232,7 +230,7 @@ function pB(currencies, balances, openOrders, total) {
 
                 if (value.moy * (100 - config.median()[1]) / 100 > value.price
                     || value.moy * (100 - config.median()[0]) / 100 < value.price
-                    || value.price <= 0 || prc < 10 || prc_m < 10)
+                    || value.price <= 0 || prc < 10)
                     curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol !== value.symbol)
             }
 
