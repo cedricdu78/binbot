@@ -266,8 +266,8 @@ function output(currencies, curr, details, new_orders, balances, orders, total, 
             'available': details.length,
             'total': currencies.length,
             '%': Number((details.length / currencies.length * 100).toFixed(0)),
-            'Rapport': 'Marché en ' + (Number((details.length / currencies.length * 100).toFixed(0)) > 20
-                ? 'baisse': 'hausse')
+            'Rapport': 'Marché ' + (Number((details.length / currencies.length * 100).toFixed(0)) > 20
+                ? 'baissier': 'haussier')
         }
     })
     console.table({
