@@ -1,31 +1,12 @@
-const secrets = require('./secrets');
+const binSecret = require('./config/secrets');
+const config = require('./config/config');
+const func = require('./class/func');
 
 const Binance = require('node-binance-api');
 const binance = new Binance().options({
-    APIKEY: secrets.binance_key(),
-    APISECRET: secrets.binance_secret()
+    APIKEY: binSecret.key(),
+    APISECRET: binSecret.secret()
 });
-
-function getDate(date = new Date()) {
-    return date.getFullYear() + "-"
-        + (String(date.getUTCMonth()).length === 1 ? ("0" + (date.getMonth() + 1)) : (date.getMonth() + 1)) + "-"
-        + (String(date.getDate()).length === 1 ? ("0" + date.getDate()) : date.getDate()) + " "
-        + (String(date.getHours()).length === 1 ? ("0" + date.getHours()) : date.getHours()) + "-"
-        + (String(date.getMinutes()).length === 1 ? ("0" + date.getMinutes()) : date.getMinutes()) + "-"
-        + (String(date.getSeconds()).length === 1 ? ("0" + date.getSeconds()) : date.getSeconds())
-}
-
-function order(currency, volume, stopLoss, openValue, nowValue, timestamp, plusValue) {
-    const order = Object.create(null)
-    order.currency = currency
-    order.volume = Number(volume)
-    order.openValue = Number(openValue)
-    order.nowValue = Number(nowValue)
-    order.WantValue = Number(stopLoss)
-    order.date = getDate(new Date(timestamp))
-    order.plusValue = Number(plusValue.toFixed(2))
-    return order
-}
 
 function balance() {
     try {
@@ -35,7 +16,7 @@ function balance() {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
@@ -47,7 +28,7 @@ function openOrders(balances) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
@@ -56,16 +37,16 @@ function exchangeInfo(balances, orders) {
         binance.exchangeInfo((error, exchangeInfo) => {
             if (error !== null) new Error(error);
             else candlesticks(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
-                value.symbol.endsWith('USDT')
-                && !value.symbol.endsWith('DOWNUSDT')
-                && !value.symbol.endsWith('UPUSDT')
-                && !value.symbol.endsWith('BULLUSDT')
-                && !value.symbol.endsWith('BEARUSDT')
+                value.symbol.endsWith(config.baseMoney())
+                && !value.symbol.endsWith('DOWN' + config.baseMoney())
+                && !value.symbol.endsWith('UP' + config.baseMoney())
+                && !value.symbol.endsWith('BULL' + config.baseMoney())
+                && !value.symbol.endsWith('BEAR' + config.baseMoney())
                 && value.status !== 'BREAK'), balances, orders)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
@@ -73,7 +54,7 @@ function candlesticks(currencies, balances, orders) {
     try {
         let counter = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
-            binance.candlesticks(value.symbol, interval, (error, res) => {
+            binance.candlesticks(value.symbol, config.interval()[0], (error, res) => {
                 if (error !== null) new Error(error);
                 else {
                     value.moy = []
@@ -91,11 +72,11 @@ function candlesticks(currencies, balances, orders) {
 
                     if (++counter === currencies.length) noOrders(balances, currencies, orders)
                 }
-            }, {limit: limit})
+            }, {limit: config.interval()[1]})
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
@@ -103,23 +84,23 @@ function noOrders(balances, currencies, orders) {
     try {
         let counter = 0, total = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
-            if (balances[value['baseAsset']].available * value.price >= 1
-                && value['baseAsset'] !== 'BNB')
+            if (balances[value['baseAsset']].available * value.price >= config.noOrder()
+                && value['baseAsset'] !== config.feeMoney())
                 console.error(value.symbol + ' has units out of order: '
-                    + (balances[value['baseAsset']].available * value.price) + '$')
+                    + (balances[value['baseAsset']].available * value.price) + config.baseSymbol())
 
             total += value.price * Number(balances[value['baseAsset']].available)
             total += value.price * Number(balances[value['baseAsset']].onOrder)
 
-            if (value.symbol === "BNBUSDT")
-                balances["BNB"].available = balances["BNB"].available * value.price
+            if (value.symbol === config.feeMoney() + config.baseMoney())
+                balances[config.feeMoney()].available *= value.price
 
             if (++counter === currencies.length)
                 buyLimit(currencies, balances, orders, total)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
@@ -132,7 +113,7 @@ function buyLimit2(currencies, new_orders, total, details, BuyNb, balances, orde
             volume = volume.substr(0, volume.split('.')[0].length
                 + (value.lenVol ? 1 : 0) + value.lenVol)
 
-            let price = String(value.price * profit / 100)
+            let price = String(value.price * config.profit() / 100)
             price = price.substr(0, price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
@@ -140,7 +121,7 @@ function buyLimit2(currencies, new_orders, total, details, BuyNb, balances, orde
             value.price = value.price.substr(0, value.price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-            if (balances["BNB"].available > (value.price * 0.15 / 100)) {
+            if (balances[config.feeMoney()].available > (value.price * 0.15 / 100)) {
                 open += Number(value.price)
                 now += Number(value.price)
                 want += Number(price * volume)
@@ -157,7 +138,7 @@ function buyLimit2(currencies, new_orders, total, details, BuyNb, balances, orde
                                 console.error(value.symbol + " [" + responseJson.code + "]: "
                                     + responseJson["msg"] + " " + price + " " + volume)
                             } else {
-                                new_orders.push(order(
+                                new_orders.push(func.order(
                                     value.symbol,
                                     volume,
                                     price * volume,
@@ -167,8 +148,8 @@ function buyLimit2(currencies, new_orders, total, details, BuyNb, balances, orde
                                     0
                                 ))
 
-                                balances["USDT"].available -= mise
-                                balances["BNB"].available -= value.price * 0.0750 / 100
+                                balances[config.baseMoney()].available -= mise
+                                balances[config.feeMoney()].available -= value.price * 0.0750 / 100
 
                                 if (++counter === currencies.length)
                                     output(details, new_orders, balances, orders, total, open, now, want)
@@ -183,15 +164,15 @@ function buyLimit2(currencies, new_orders, total, details, BuyNb, balances, orde
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
 function buyLimit(currencies, balances, openOrders, total) {
     try {
 
-        total += Number(balances["USDT"].available)
-        total += Number(balances["USDT"].onOrder)
+        total += Number(balances[config.baseMoney()].available)
+        total += Number(balances[config.baseMoney()].onOrder)
 
         let curr = [], details = [], new_orders = [], orders = []
         let counter = 0, open = 0, now = 0, want = 0, mise = total * 4 / 100;
@@ -203,7 +184,7 @@ function buyLimit(currencies, balances, openOrders, total) {
             volume = volume.substr(0, volume.split('.')[0].length
                 + (curr.lenVol ? 1 : 0) + curr.lenVol)
 
-            let openValue = String(value.price / (profit / 100) * value['origQty'])
+            let openValue = String(value.price / (config.profit() / 100) * value['origQty'])
             openValue = openValue.substr(0, openValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
@@ -219,14 +200,14 @@ function buyLimit(currencies, balances, openOrders, total) {
             now += Number(nowValue)
             want += Number(wantValue)
 
-            orders.push(order(
+            orders.push(func.order(
                 value.symbol,
                 volume,
                 wantValue,
                 openValue,
                 nowValue,
                 value['time'],
-                (curr.price - value.price / (profit / 100)) / value.price / (profit / 100) * 100
+                (curr.price - value.price / (config.profit() / 100)) / value.price / (config.profit() / 100) * 100
             ))
         })
 
@@ -237,7 +218,7 @@ function buyLimit(currencies, balances, openOrders, total) {
 
                 let min = Math.min.apply(null, value.moy)
                 let max = Math.max.apply(null, value.moy)
-                value.moy = average(value.moy)
+                value.moy = func.lAvg(value.moy)
                 let prcm = ((max - value.moy) / value.moy) * 100
                 let prc = ((max - min) / min) * 100
 
@@ -250,10 +231,10 @@ function buyLimit(currencies, balances, openOrders, total) {
                     detail.max = max
                     detail.prc = Number(prc.toFixed(0))
                     detail.prcm = Number(prcm.toFixed(0))
-                    detail.bm = Number((value.moy * (100 - b_median) / 100).toFixed(6))
-                    detail.am = Number((value.moy * (100 - a_median) / 100).toFixed(6))
-                    detail.amprice = Number((((value.price - (value.moy * (100 - a_median) / 100))
-                        / (value.moy * (100 - a_median) / 100)) * 100).toFixed(2))
+                    detail.bm = Number((value.moy * (100 - config.median()[1]) / 100).toFixed(6))
+                    detail.am = Number((value.moy * (100 - config.median()[0]) / 100).toFixed(6))
+                    detail.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
+                        / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 
                     if (detail.amprice <= 0)
                         details.push(detail)
@@ -261,8 +242,8 @@ function buyLimit(currencies, balances, openOrders, total) {
                     value.amprice = detail.amprice
                 }
 
-                if (value.moy * (100 - b_median) / 100 > value.price
-                    || value.moy * (100 - a_median) / 100 < value.price
+                if (value.moy * (100 - config.median()[1]) / 100 > value.price
+                    || value.moy * (100 - config.median()[0]) / 100 < value.price
                     || value.price <= 0 || prc < 10 || prcm < 10)
                     curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol !== value.symbol)
             }
@@ -276,7 +257,7 @@ function buyLimit(currencies, balances, openOrders, total) {
                     curr2.push(v)
                 })
 
-                let nbMise = Number(String(Number(balances["USDT"].available) / mise).split('.')[0])
+                let nbMise = Number(String((Number(balances[config.baseMoney()].available) - config.keep_balance()) / mise).split('.')[0])
                 if (nbMise > 0) {
                     curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
@@ -287,7 +268,7 @@ function buyLimit(currencies, balances, openOrders, total) {
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, refresh)).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
     }
 }
 
@@ -296,45 +277,39 @@ function output(details, BuyNb, new_orders, balances, orders, total, open, now, 
     if (new_orders.length > 0) console.table(new_orders)
     if (details.length > 0) console.table({CryptoAvailable: details.length, OfTotal: BuyNb + "%"})
     console.table({
-        'Trades (USD)': {
+        ['Trades (' + config.baseSymbol() + ')']: {
             'Placed': Number((Number(open)).toFixed(2)),
             'Current': Number((Number(now)).toFixed(2)),
             'Target': Number((Number(want)).toFixed(2))
         },
-        'USDT (USD)': {
-            'Placed': Number(Number(balances["USDT"].available).toFixed(2)),
-            'Current': Number(Number(balances["USDT"].available).toFixed(2)),
-            'Target': Number(Number(balances["USDT"].available).toFixed(2))
+        [config.baseMoney() + ' (' + config.baseSymbol() + ')']: {
+            'Placed': Number(Number(balances[config.baseMoney()].available).toFixed(2)),
+            'Current': Number(Number(balances[config.baseMoney()].available).toFixed(2)),
+            'Target': Number(Number(balances[config.baseMoney()].available).toFixed(2))
         },
-        'BNB (USD)': {
-            'Placed': Number(Number(balances["BNB"].available).toFixed(2)),
-            'Current': Number(Number(balances["BNB"].available).toFixed(2)),
-            'Target': Number(Number(balances["BNB"].available).toFixed(2))
+        [config.feeMoney() + ' (' + config.baseSymbol() + ')']: {
+            'Placed': Number(Number(balances[config.feeMoney()].available).toFixed(2)),
+            'Current': Number(Number(balances[config.feeMoney()].available).toFixed(2)),
+            'Target': Number(Number(balances[config.feeMoney()].available).toFixed(2))
         },
-        'Total (USD)': {
+        ['Total (' + config.baseSymbol() + ')']: {
             'Placed': Number((Number(open)
-                + Number(balances["USDT"].available)
-                + Number(balances["BNB"].available)
+                + Number(balances[config.baseMoney()].available)
+                + Number(balances[config.feeMoney()].available)
             ).toFixed(2)),
             'Current': Number((Number(now)
-                + Number(balances["USDT"].available)
-                + Number(balances["BNB"].available)
+                + Number(balances[config.baseMoney()].available)
+                + Number(balances[config.feeMoney()].available)
             ).toFixed(2)),
             'Target': Number((Number(want)
-                + Number(balances["USDT"].available)
-                + Number(balances["BNB"].available)
+                + Number(balances[config.baseMoney()].available)
+                + Number(balances[config.feeMoney()].available)
             ).toFixed(2))
         }
     })
 
-    new Promise(res => setTimeout(res, refresh)).finally(() => main());
+    new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
 }
-
-const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length,
-    interval = "15m", limit = 673,
-    a_median = 0, b_median = 20,
-    profit = 110, keep_balance = 0,
-    refresh = 20000;
 
 function main() {
     balance();

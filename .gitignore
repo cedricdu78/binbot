@@ -1,5 +1,6 @@
 .idea/
 kraken_api.iml
+package.json
 package-lock.json
-secrets.js
+config/secrets.js
 node_modules
