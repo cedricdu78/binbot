@@ -6,7 +6,7 @@ module.exports = {
     // onlyShort :      Le bot n'achète que quand le marché est detecter comme baissier
     keep_balance: function () { return 0 },
     noOrder: function () { return 1 },
-    marketPrc: function () { return 20 },
+    marketPrc: function () { return 10 },
     onlyShort: function () { return false },
 
     // mise :       La mise est de 4% de votre solde total (exemple pour 4000$ de solde spot, mise de 160$)
