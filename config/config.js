@@ -22,7 +22,7 @@ module.exports = {
 
     // baseMoney    : USDT is base for trading crypto (is stablecoin)
     // baseSymbol   : Symbol de la monney utilisé
-    // feeMoney     : Use BNB for payement fee trading because -50%
+    // feeMoney     : Use BNB for payement fee trading because -25%
     // feeValue     : Fee value with BNB is 0.750 but for security 0.15
     baseMoney: function () { return "USDT" },
     baseSymbol: function () { return "$" },
