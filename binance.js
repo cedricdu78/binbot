@@ -96,7 +96,7 @@ function noOrders(balances, currencies, orders) {
                 balances[config.feeMoney()].available *= value.price
 
             if (++counter === currencies.length)
-                buyLimit(currencies, balances, orders, total)
+                prepareBuy(currencies, balances, orders, total)
         })
     } catch (err) {
         console.error(err)
@@ -104,7 +104,7 @@ function noOrders(balances, currencies, orders) {
     }
 }
 
-function buyLimit2(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
+function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
         Object.entries(curr).forEach(function ([, value]) {
@@ -168,7 +168,7 @@ function buyLimit2(currencies, curr, new_orders, total, details, BuyNb, balances
     }
 }
 
-function buyLimit(currencies, balances, openOrders, total) {
+function prepareBuy(currencies, balances, openOrders, total) {
     try {
 
         total += Number(balances[config.baseMoney()].available)
@@ -247,7 +247,7 @@ function buyLimit(currencies, balances, openOrders, total) {
                 if (nbMise > 0) {
                     curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
-                        buyLimit2(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
+                        buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
                     else output(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                 } else output(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
             }
