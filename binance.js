@@ -8,35 +8,35 @@ const binance = new Binance().options({
     APISECRET: binSecret.secret()
 });
 
-function getBalance() {
+function gB() {
     try {
         binance.balance((error, balances) => {
             if (error !== null) new Error(error);
-            else getOpenOrders(balances)
+            else gOO(balances)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function getOpenOrders(balances) {
+function gOO(balances) {
     try {
         binance.openOrders(undefined, (error, orders) => {
             if (error !== null) new Error(error);
-            else getCurrencies(balances, orders)
+            else gC(balances, orders)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function getCurrencies(balances, orders) {
+function gC(balances, orders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
             if (error !== null) new Error(error);
-            else getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
+            else gH(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
                 value.symbol.endsWith(config.baseMoney())
                 && !value.symbol.endsWith('DOWN' + config.baseMoney())
                 && !value.symbol.endsWith('UP' + config.baseMoney())
@@ -46,11 +46,11 @@ function getCurrencies(balances, orders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function getHistories(currencies, balances, orders) {
+function gH(currencies, balances, orders) {
     try {
         let counter = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -70,17 +70,17 @@ function getHistories(currencies, balances, orders) {
                     value.lenVol = minVolume.minQty.split('.')[0] === "0"
                         ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                    if (++counter === currencies.length) getNoOrders(balances, currencies, orders)
+                    if (++counter === currencies.length) gNO(balances, currencies, orders)
                 }
             }, {limit: config.interval()[1]})
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function getNoOrders(balances, currencies, orders) {
+function gNO(balances, currencies, orders) {
     try {
         let counter = 0, total = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -96,15 +96,15 @@ function getNoOrders(balances, currencies, orders) {
                 balances[config.feeMoney()].available *= value.price
 
             if (++counter === currencies.length)
-                prepareBuy(currencies, balances, orders, total)
+                pB(currencies, balances, orders, total)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
+function bL(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
         Object.entries(curr).forEach(function ([, value]) {
@@ -152,23 +152,23 @@ function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances,
                                 balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
 
                                 if (++counter === curr.length)
-                                    getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                                    gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                             }
                         })
                     }
                 })
             } else {
-                getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                 console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
             }
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function prepareBuy(currencies, balances, openOrders, total) {
+function pB(currencies, balances, openOrders, total) {
     try {
 
         total += Number(balances[config.baseMoney()].available)
@@ -219,10 +219,10 @@ function prepareBuy(currencies, balances, openOrders, total) {
                 let min = Math.min.apply(null, value.moy)
                 let max = Math.max.apply(null, value.moy)
                 value.moy = func.lAvg(value.moy)
-                let prcm = ((max - value.moy) / value.moy) * 100
+                let prc_m = ((max - value.moy) / value.moy) * 100
                 let prc = ((max - min) / min) * 100
 
-                if (prc >= config.prc() && prcm >= config.prcm()) {
+                if (prc >= config.prc() && prc_m >= config.prc_m()) {
                     value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
                         / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 
@@ -232,7 +232,7 @@ function prepareBuy(currencies, balances, openOrders, total) {
 
                 if (value.moy * (100 - config.median()[1]) / 100 > value.price
                     || value.moy * (100 - config.median()[0]) / 100 < value.price
-                    || value.price <= 0 || prc < 10 || prcm < 10)
+                    || value.price <= 0 || prc < 10 || prc_m < 10)
                     curr = Object.entries(currencies).filter(([, [, val]]) => val.symbol !== value.symbol)
             }
 
@@ -243,33 +243,41 @@ function prepareBuy(currencies, balances, openOrders, total) {
                     curr2.push(v)
                 })
 
-                let nbMise = Number(String((Number(balances[config.baseMoney()].available) - config.keep_balance()) / mise).split('.')[0])
-                if (nbMise > 0) {
+                let nbMise = Number(String((Number(balances[config.baseMoney()].available)
+                    - config.keep_balance()) / mise).split('.')[0])
+                if (nbMise > 0 && (!config.onlyShort() || Number((details.length / currencies.length * 100)
+                    .toFixed(0)) > config.marketPrc())) {
                     curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
-                        buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                    else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-                } else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                        bL(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
+                    else gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                } else gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
     }
 }
 
-function getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
-    if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
-    if (new_orders.length > 0) console.table(new_orders)
-    console.table({
+function gT(arr) {
+    if (arr.length > 0)
+        console.table(arr)
+}
+
+function gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
+
+    const stateCurrencies = {
         [config.colCrypto()[0]]: {
             [config.colCrypto()[1]]: details.length, [config.colCrypto()[2]]: currencies.length,
             '%': Number((details.length / currencies.length * 100).toFixed(0)),
-            [config.colCrypto()[3]]: config.colCrypto()[4] + ' ' + (Number((details.length / currencies.length * 100).toFixed(0)) > 20
-                ? config.colCrypto()[5] : config.colCrypto()[6])
+            [config.colCrypto()[3]]: config.colCrypto()[4] + ' '
+            + (Number((details.length / currencies.length * 100).toFixed(0)) > config.marketPrc() ? config.colCrypto()[5]
+                : config.colCrypto()[6])
         }
-    })
-    console.table({
+    }
+
+    const stateBalance = {
         ['Trades (' + config.baseSymbol() + ')']: {
             [config.colResume()[0]]: Number((Number(open)).toFixed(2)),
             [config.colResume()[1]]: Number((Number(now)).toFixed(2)),
@@ -293,13 +301,14 @@ function getOutput(currencies, curr, details, new_orders, balances, orders, tota
             [config.colResume()[2]]: Number((Number(want) + Number(balances[config.baseMoney()].available)
                 + Number(balances[config.feeMoney()].available)).toFixed(2))
         }
-    })
+    }
 
-    new Promise(res => setTimeout(res, config.refresh())).finally(() => main());
+    gT(orders.sort((a, b) => b.plusValue - a.plusValue))
+    gT(new_orders)
+    console.table(stateCurrencies)
+    console.table(stateBalance)
+
+    new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
 }
 
-function main() {
-    getBalance();
-}
-
-main()
+gB();
