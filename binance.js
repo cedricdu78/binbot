@@ -33,6 +33,7 @@ function getCurrencies(balances, openOrders) {
     binance.exchangeInfo().then(exchangeInfo => {
         let total = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder),
             counter = 0, currencies = []
+
         Object.entries(exchangeInfo['symbols']).filter(([, value]) => {
             if (value.symbol.endsWith(config.baseMoney())
                 && !value.symbol.endsWith('DOWN' + config.baseMoney())
@@ -42,8 +43,12 @@ function getCurrencies(balances, openOrders) {
                 && value.status !== 'BREAK') {
 
                 getHistories(value).then(value => {
-                    getNoOrders(value, balances, openOrders)
                     total += getTotal(value, balances)
+                    getNoOrders(value, balances)
+
+                    if (value.symbol === config.feeMoney() + config.baseMoney())
+                        balances[config.feeMoney()].available *= value.price
+
                     currencies.push(value)
 
                     if (++counter === exchangeInfo['symbols'].length)
@@ -60,29 +65,30 @@ function getCurrencies(balances, openOrders) {
 
 // get history per currency
 function getHistories(value) {
-    return binance.candlesticks(value.symbol, config.interval()[0], null, {limit: config.interval()[1]}).then(
-        res => {
-            value.moy = []
-            res.forEach(function (val) {
-                value.moy.push(Number(val[4]))
-            })
-            value.price = value.moy[value.moy.length - 1]
+    return binance.candlesticks(value.symbol, config.interval()[0], null, {
+        limit: config.interval()[1]
+    }).then(res => {
+        value.moy = []
+        res.forEach(function (val) {
+            value.moy.push(Number(val[4]))
+        })
+        value.price = value.moy[value.moy.length - 1]
 
-            let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-            let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-            value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
-                ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
-            value.lenVol = minVolume.minQty.split('.')[0] === "0"
-                ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+        let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+        let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+        value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
+            ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+        value.lenVol = minVolume.minQty.split('.')[0] === "0"
+            ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-            return value
-        }
-    ).catch(err => {
+        return value
+    }).catch(err => {
         console.error(err)
         new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
     })
 }
 
+// get total balances
 function getTotal(value, balances) {
     return value.price * Number(balances[value['baseAsset']].available)
         + value.price * Number(balances[value['baseAsset']].onOrder)
@@ -94,9 +100,6 @@ function getNoOrders(value, balances) {
         && value['baseAsset'] !== config.feeMoney())
         console.error(value.symbol + ' has units out of order: '
             + (balances[value['baseAsset']].available * value.price) + config.baseSymbol())
-
-    if (value.symbol === config.feeMoney() + config.baseMoney())
-        balances[config.feeMoney()].available *= value.price
 }
 
 // buy currency
