@@ -261,7 +261,7 @@ function prepareBuy(currencies, balances, openOrders, total) {
 function getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
     if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
     if (new_orders.length > 0) console.table(new_orders)
-    if (details.length > 0) console.table({
+    console.table({
         'currencies': {
             'available': details.length, 'total': currencies.length,
             '%': Number((details.length / currencies.length * 100).toFixed(0)),
