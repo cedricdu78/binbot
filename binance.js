@@ -263,11 +263,10 @@ function output(currencies, curr, details, new_orders, balances, orders, total, 
     if (new_orders.length > 0) console.table(new_orders)
     if (details.length > 0) console.table({
         'currencies': {
-            'available': details.length,
-            'total': currencies.length,
+            'available': details.length, 'total': currencies.length,
             '%': Number((details.length / currencies.length * 100).toFixed(0)),
             'Rapport': 'Marché ' + (Number((details.length / currencies.length * 100).toFixed(0)) > 20
-                ? 'baissier': 'haussier')
+                ? 'baissier' : 'haussier')
         }
     })
     console.table({
@@ -287,18 +286,12 @@ function output(currencies, curr, details, new_orders, balances, orders, total, 
             'Target': Number(Number(balances[config.feeMoney()].available).toFixed(2))
         },
         ['Total (' + config.baseSymbol() + ')']: {
-            'Placed': Number((Number(open)
-                + Number(balances[config.baseMoney()].available)
-                + Number(balances[config.feeMoney()].available)
-            ).toFixed(2)),
-            'Current': Number((Number(now)
-                + Number(balances[config.baseMoney()].available)
-                + Number(balances[config.feeMoney()].available)
-            ).toFixed(2)),
-            'Target': Number((Number(want)
-                + Number(balances[config.baseMoney()].available)
-                + Number(balances[config.feeMoney()].available)
-            ).toFixed(2))
+            'Placed': Number((Number(open) + Number(balances[config.baseMoney()].available)
+                + Number(balances[config.feeMoney()].available)).toFixed(2)),
+            'Current': Number((Number(now) + Number(balances[config.baseMoney()].available)
+                + Number(balances[config.feeMoney()].available)).toFixed(2)),
+            'Target': Number((Number(want) + Number(balances[config.baseMoney()].available)
+                + Number(balances[config.feeMoney()].available)).toFixed(2))
         }
     })
 
