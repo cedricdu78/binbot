@@ -113,7 +113,7 @@ function bL(currencies, curr, new_orders, total, details, BuyNb, balances, order
             volume = volume.substr(0, volume.split('.')[0].length
                 + (value.lenVol ? 1 : 0) + value.lenVol)
 
-            let price = String(value.price * config.profit() / 100)
+            let price = String(value.price * (config.profit() / 100 + 1))
             price = price.substr(0, price.split('.')[0].length
                 + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
@@ -184,7 +184,7 @@ function pB(currencies, balances, openOrders, total) {
             volume = volume.substr(0, volume.split('.')[0].length
                 + (curr.lenVol ? 1 : 0) + curr.lenVol)
 
-            let openValue = String(value.price / (config.profit() / 100) * value['origQty'])
+            let openValue = String(value.price / (config.profit() / 100 + 1) * value['origQty'])
             openValue = openValue.substr(0, openValue.split('.')[0].length
                 + (curr.lenPrice ? 1 : 0) + curr.lenPrice)
 
@@ -207,7 +207,7 @@ function pB(currencies, balances, openOrders, total) {
                 openValue,
                 nowValue,
                 value['time'],
-                (curr.price - value.price / (config.profit() / 100)) / value.price / (config.profit() / 100) * 100
+                (curr.price - value.price / (config.profit() / 100 + 1)) / value.price / (config.profit() / 100 + 1) * 100
             ))
         })
 
