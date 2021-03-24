@@ -33,6 +33,6 @@ module.exports = {
     // colCrypto :  Column name in console output
     // refresh :    We wait 20s before relaunching the bot (in ms)
     colResume: function () { return ["Placed", "Current", "Target"] },
-    colCrypto: function () { return ["Currencies", "Available", "Total", "Rapport", "Marché", "baissier", "haussier"] },
+    colCrypto: function () { return ["Currencies", "Available", "Total", "Status", "Market", "bearish", "bullish"] },
     refresh: function () { return 20000 },
 }
