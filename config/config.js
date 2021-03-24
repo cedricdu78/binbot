@@ -17,8 +17,8 @@ module.exports = {
     mise: function () { return 4 },
     profit: function () { return 10 },
     interval: function () { return ['15m', 673] },
-    median: function () { return [0, 20] },
-    prc: function () { return 10  },
+    median: function () { return [5, 20] },
+    prc: function () { return 10 },
 
     // baseMoney    : USDT is base for trading crypto (is stablecoin)
     // baseSymbol   : Symbol de la monney utilisé
