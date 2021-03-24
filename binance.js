@@ -244,7 +244,7 @@ function pB(currencies, balances, openOrders, total) {
                 let nbMise = Number(String((Number(balances[config.baseMoney()].available)
                     - config.keep_balance()) / mise).split('.')[0])
                 if (nbMise > 0 && (!config.onlyShort() || Number((details.length / currencies.length * 100)
-                    .toFixed(0)) > config.marketPrc())) {
+                    .toFixed(0)) >= config.marketPrc())) {
                     curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
                         bL(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
@@ -270,7 +270,7 @@ function gO(currencies, curr, details, new_orders, balances, orders, total, open
             [config.colCrypto()[1]]: details.length, [config.colCrypto()[2]]: currencies.length,
             '%': Number((details.length / currencies.length * 100).toFixed(0)),
             [config.colCrypto()[3]]: config.colCrypto()[4] + ' '
-            + (Number((details.length / currencies.length * 100).toFixed(0)) > config.marketPrc() ? config.colCrypto()[5]
+            + (Number((details.length / currencies.length * 100).toFixed(0)) >= config.marketPrc() ? config.colCrypto()[5]
                 : config.colCrypto()[6])
         }
     }
