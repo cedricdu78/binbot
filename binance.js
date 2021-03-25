@@ -10,47 +10,35 @@ const binance = new Binance().options({
 
 // get balance of account
 function getBalances() {
-    try {
-        binance.balance((error, balances) => {
-            if (error !== null) new Error(error);
-            else getOpenOrders(balances)
-        })
-    } catch (err) {
-        console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
-    }
+    binance.balance().then(balances => {
+        getOpenOrders(balances)
+    }).catch(error => {
+        console.error(error)
+    }).finally(() => new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances()))
 }
 
 // get open order
 function getOpenOrders(balances) {
-    try {
-        binance.openOrders(undefined, (error, openOrders) => {
-            if (error !== null) new Error(error);
-            else getCurrencies(balances, openOrders)
-        })
-    } catch (err) {
-        console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
-    }
+    binance.openOrders().then(openOrders => {
+        getCurrencies(balances, openOrders)
+    }).catch(error => {
+        console.error(error)
+    })
 }
 
 // get currencies available
 function getCurrencies(balances, openOrders) {
-    try {
-        binance.exchangeInfo((error, exchangeInfo) => {
-            if (error !== null) new Error(error);
-            else getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
-                value.symbol.endsWith(config.baseMoney())
-                && !value.symbol.endsWith('DOWN' + config.baseMoney())
-                && !value.symbol.endsWith('UP' + config.baseMoney())
-                && !value.symbol.endsWith('BULL' + config.baseMoney())
-                && !value.symbol.endsWith('BEAR' + config.baseMoney())
-                && value.status !== 'BREAK'), balances, openOrders)
-        })
-    } catch (err) {
-        console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
-    }
+    binance.openOrders().then(exchangeInfo => {
+        getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
+            value.symbol.endsWith(config.baseMoney())
+            && !value.symbol.endsWith('DOWN' + config.baseMoney())
+            && !value.symbol.endsWith('UP' + config.baseMoney())
+            && !value.symbol.endsWith('BULL' + config.baseMoney())
+            && !value.symbol.endsWith('BEAR' + config.baseMoney())
+            && value.status !== 'BREAK'), balances, openOrders)
+    }).catch(error => {
+        console.error(error)
+    })
 }
 
 // get history per currency
