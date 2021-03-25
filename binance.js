@@ -41,7 +41,8 @@ function getCurrencies(balances, openOrders) {
                     if (value !== undefined) {
                         total += getTotal(value, balances)
                         getNoOrders(value, balances)
-                        currencies.push(value)
+                        currencies.push({symbol: value.symbol, price: value.price, lenVol: value.lenVol,
+                            lenPrice: value.lenPrice, baseAsset: value.baseAsset, moy: value.moy})
                     }
 
                     if (++counter === exchangeInfo['symbols'].length)
