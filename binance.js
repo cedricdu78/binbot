@@ -38,7 +38,7 @@ function getCurrencies(balances, openOrders) {
                 && value.status !== 'BREAK') {
 
                 getHistories(value).then(value => {
-                    if (value.price !== undefined) {
+                    if (value !== undefined) {
                         total += getTotal(value, balances)
                         getNoOrders(value, balances)
                         currencies.push(value)
