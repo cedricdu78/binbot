@@ -203,7 +203,7 @@ function prepareBuying(currencies, balances, openOrders, total) {
 
             if (value.moy * (100 - config.median()[1]) / 100 <= value.price
                 && value.moy * (100 - config.median()[0]) / 100 >= value.price
-                && value.price > 0 && prc >= 10) {
+                && value.price > 0 && prc >= config.prc()) {
                 value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
                     / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 

@@ -6,8 +6,8 @@ module.exports = {
     // onlyShort :      The bot only buys when the market is detected as bearish
     keep_balance: function () { return 0 },
     noOrder: function () { return 1 },
-    marketPrc: function () { return 10 },
-    onlyShort: function () { return false },
+    marketPrc: function () { return 30 },
+    onlyShort: function () { return true },
 
     // mise :       The stake is 4% of your total balance (example for $4000 spot balance, stake of $160)
     // profit :     Percentage of expected gain per purchase on a crypto
