@@ -9,37 +9,37 @@ const binance = new Binance().options({
 });
 
 // get balance of account
-function gB() {
+function getBalances() {
     try {
         binance.balance((error, balances) => {
             if (error !== null) new Error(error);
-            else gOO(balances)
+            else getOpenOrders(balances)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // get open order
-function gOO(balances) {
+function getOpenOrders(balances) {
     try {
         binance.openOrders(undefined, (error, openOrders) => {
             if (error !== null) new Error(error);
-            else gC(balances, openOrders)
+            else getCurrencies(balances, openOrders)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // get currencies available
-function gC(balances, openOrders) {
+function getCurrencies(balances, openOrders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
             if (error !== null) new Error(error);
-            else gH(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
+            else getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
                 value.symbol.endsWith(config.baseMoney())
                 && !value.symbol.endsWith('DOWN' + config.baseMoney())
                 && !value.symbol.endsWith('UP' + config.baseMoney())
@@ -49,12 +49,12 @@ function gC(balances, openOrders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // get history per currency
-function gH(currencies, balances, openOrders) {
+function getHistories(currencies, balances, openOrders) {
     try {
         let counter = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -74,18 +74,18 @@ function gH(currencies, balances, openOrders) {
                     value.lenVol = minVolume.minQty.split('.')[0] === "0"
                         ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                    if (++counter === currencies.length) gNO(balances, currencies, openOrders)
+                    if (++counter === currencies.length) getNoOrders(balances, currencies, openOrders)
                 }
             }, {limit: config.interval()[1]})
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // get currency without order
-function gNO(balances, currencies, openOrders) {
+function getNoOrders(balances, currencies, openOrders) {
     try {
         let counter = 0, total = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -101,16 +101,16 @@ function gNO(balances, currencies, openOrders) {
                 balances[config.feeMoney()].available *= value.price
 
             if (++counter === currencies.length)
-                pB(currencies, balances, openOrders, total)
+                prepareBuy(currencies, balances, openOrders, total)
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // buy currency
-function bL(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want) {
+function buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
         Object.entries(curr).forEach(function ([, value]) {
@@ -158,24 +158,24 @@ function bL(currencies, curr, new_orders, total, details, balances, orders, mise
                                 balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
 
                                 if (++counter === curr.length)
-                                    gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                                    getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                             }
                         })
                     }
                 })
             } else {
-                gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                 console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
             }
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // Remove cryptocurrencies that do not match the purchase condition
-function pB(currencies, balances, openOrders, total) {
+function prepareBuy(currencies, balances, openOrders, total) {
     try {
 
         total += Number(balances[config.baseMoney()].available)
@@ -254,19 +254,19 @@ function pB(currencies, balances, openOrders, total) {
                     .toFixed(0)) >= config.marketPrc())) {
                     curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
-                        bL(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                    else gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-                } else gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                        buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
+                    else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                } else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
 // Return status of orders, balances and cryptos
-function gO(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
+function getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
 
     const stateCurrencies = {
         [config.colCrypto()[0]]: {
@@ -309,8 +309,8 @@ function gO(currencies, curr, details, new_orders, balances, orders, total, open
     console.table(stateCurrencies)
     console.table(stateBalance)
 
-    new Promise(res => setTimeout(res, config.refresh())).finally(() => gB());
+    new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
 }
 
 // Start bot
-gB();
+getBalances();
