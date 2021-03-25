@@ -203,16 +203,18 @@ function prepareBuying(currencies, balances, openOrders, total) {
             value.moy = func.lAvg(value.moy)
             let prc = ((max - value.moy) / value.moy) * 100
 
-            if (value.moy * (100 - config.median()[1]) / 100 <= value.price
-                && value.moy * (100 - config.median()[0]) / 100 >= value.price
-                && value.price > 0 && prc >= 10) {
-
+            if (prc >= config.prc()) {
                 value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
                     / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 
                 if (value.amprice <= 0)
                     details.push(value.symbol)
-            } else curr = Object.entries(currencies).filter(([, val]) => val.symbol !== value.symbol)
+            }
+
+            if (value.moy * (100 - config.median()[1]) / 100 > value.price
+                || value.moy * (100 - config.median()[0]) / 100 < value.price
+                || value.price <= 0 || prc < 10)
+                curr = Object.entries(currencies).filter(([, val]) => val.symbol !== value.symbol)
         }
 
         if (++counter === currencies.length) {
