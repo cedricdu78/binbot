@@ -140,14 +140,14 @@ function buyLimit(currencies, curr, new_orders, total, available, balances, orde
                     let responseJson = JSON.parse(error.body)
                     console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
                         + " " + volume)
+                }).finally(() => {
+                    if (++counter === curr.length)
+                        getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
                 })
             }).catch(error => {
                 let responseJson = JSON.parse(error.body)
                 console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
                     + " " + volume)
-            }).finally(() => {
-                if (++counter === curr.length)
-                    getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
             })
         } else {
             getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
