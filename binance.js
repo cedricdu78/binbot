@@ -24,9 +24,9 @@ function gB() {
 // get open order
 function gOO(balances) {
     try {
-        binance.openOrders(undefined, (error, orders) => {
+        binance.openOrders(undefined, (error, openOrders) => {
             if (error !== null) new Error(error);
-            else gC(balances, orders)
+            else gC(balances, openOrders)
         })
     } catch (err) {
         console.error(err)
@@ -35,7 +35,7 @@ function gOO(balances) {
 }
 
 // get currencies available
-function gC(balances, orders) {
+function gC(balances, openOrders) {
     try {
         binance.exchangeInfo((error, exchangeInfo) => {
             if (error !== null) new Error(error);
@@ -45,7 +45,7 @@ function gC(balances, orders) {
                 && !value.symbol.endsWith('UP' + config.baseMoney())
                 && !value.symbol.endsWith('BULL' + config.baseMoney())
                 && !value.symbol.endsWith('BEAR' + config.baseMoney())
-                && value.status !== 'BREAK'), balances, orders)
+                && value.status !== 'BREAK'), balances, openOrders)
         })
     } catch (err) {
         console.error(err)
@@ -54,7 +54,7 @@ function gC(balances, orders) {
 }
 
 // get history per currency
-function gH(currencies, balances, orders) {
+function gH(currencies, balances, openOrders) {
     try {
         let counter = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -74,7 +74,7 @@ function gH(currencies, balances, orders) {
                     value.lenVol = minVolume.minQty.split('.')[0] === "0"
                         ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                    if (++counter === currencies.length) gNO(balances, currencies, orders)
+                    if (++counter === currencies.length) gNO(balances, currencies, openOrders)
                 }
             }, {limit: config.interval()[1]})
         })
@@ -85,7 +85,7 @@ function gH(currencies, balances, orders) {
 }
 
 // get currency without order
-function gNO(balances, currencies, orders) {
+function gNO(balances, currencies, openOrders) {
     try {
         let counter = 0, total = 0
         Object.entries(currencies).forEach(function ([, [, value]]) {
@@ -101,7 +101,7 @@ function gNO(balances, currencies, orders) {
                 balances[config.feeMoney()].available *= value.price
 
             if (++counter === currencies.length)
-                pB(currencies, balances, orders, total)
+                pB(currencies, balances, openOrders, total)
         })
     } catch (err) {
         console.error(err)
@@ -110,7 +110,7 @@ function gNO(balances, currencies, orders) {
 }
 
 // buy currency
-function bL(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
+function bL(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want) {
     try {
         let counter = 0;
         Object.entries(curr).forEach(function ([, value]) {
