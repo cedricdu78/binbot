@@ -10,94 +10,78 @@ const binance = new Binance().options({
 
 // get balances of account
 function getBalances() {
-    try {
-        binance.balance().then(
-            balances => getOrders(balances)
-        ).catch(err => {
-            console.error(err)
-        })
-    } catch (err) {
-        new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
-    }
+    binance.balance().then(
+        balances => getOrders(balances)
+    )
+        .catch(err => console.error(err))
+        .finally(() => new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances()))
 }
 
 // get orders
 function getOrders(balances) {
-    try {
-        binance.openOrders().then(
-            openOrders => getCurrencies(balances, openOrders)
-        ).catch(err => {
-            console.error(err)
-        })
-    } catch (err) {
-        new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
-    }
+    binance.openOrders().then(
+        openOrders => getCurrencies(balances, openOrders)
+    ).catch(err => {
+        console.error(err)
+    })
 }
 
 // get currencies available
 function getCurrencies(balances, openOrders) {
-    try {
-        binance.exchangeInfo().then(exchangeInfo => {
-            let total = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder),
-                counter = 0, currencies = []
+    binance.exchangeInfo().then(exchangeInfo => {
+        let total = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder),
+            counter = 0, currencies = []
 
-            Object.entries(exchangeInfo['symbols']).filter(([, value]) => {
-                if (value.symbol.endsWith(config.baseMoney())
-                    && !value.symbol.endsWith('DOWN' + config.baseMoney())
-                    && !value.symbol.endsWith('UP' + config.baseMoney())
-                    && !value.symbol.endsWith('BULL' + config.baseMoney())
-                    && !value.symbol.endsWith('BEAR' + config.baseMoney())
-                    && value.status !== 'BREAK') {
+        Object.entries(exchangeInfo['symbols']).filter(([, value]) => {
+            if (value.symbol.endsWith(config.baseMoney())
+                && !value.symbol.endsWith('DOWN' + config.baseMoney())
+                && !value.symbol.endsWith('UP' + config.baseMoney())
+                && !value.symbol.endsWith('BULL' + config.baseMoney())
+                && !value.symbol.endsWith('BEAR' + config.baseMoney())
+                && value.status !== 'BREAK') {
 
-                    getHistories(value).then(value => {
-                        total += getTotal(value, balances)
-                        getNoOrders(value, balances)
+                getHistories(value).then(value => {
+                    total += getTotal(value, balances)
+                    getNoOrders(value, balances)
 
-                        if (value.symbol === config.feeMoney() + config.baseMoney())
-                            balances[config.feeMoney()].available *= value.price
+                    if (value.symbol === config.feeMoney() + config.baseMoney())
+                        balances[config.feeMoney()].available *= value.price
 
-                        currencies.push(value)
+                    currencies.push(value)
 
-                        if (++counter === exchangeInfo['symbols'].length)
-                            prepareBuying(currencies, balances, openOrders, total)
-                    })
-                } else if (++counter === exchangeInfo['symbols'].length)
-                    prepareBuying(currencies, balances, openOrders, total)
-            })
-        }).catch(err => {
-            console.error(err)
+                    if (++counter === exchangeInfo['symbols'].length)
+                        prepareBuying(currencies, balances, openOrders, total)
+                })
+            } else if (++counter === exchangeInfo['symbols'].length)
+                prepareBuying(currencies, balances, openOrders, total)
         })
-    } catch (err) {
-        new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
-    }
+    }).catch(err => {
+        console.error(err)
+    })
 }
 
 // get history per currency
 function getHistories(value) {
-    try {
-        return binance.candlesticks(value.symbol, config.interval()[0], null, {
-            limit: config.interval()[1]
-        }).then(res => {
-            value.moy = []
-            res.forEach(function (val) {
-                value.moy.push(Number(val[4]))
-            })
-            value.price = value.moy[value.moy.length - 1]
-
-            let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-            let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-            value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
-                ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
-            value.lenVol = minVolume.minQty.split('.')[0] === "0"
-                ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
-
-            return value
-        }).catch(err => {
-            console.error(err)
+    return binance.candlesticks(value.symbol, config.interval()[0], null, {
+        limit: config.interval()[1]
+    }).then(res => {
+        value.moy = []
+        res.forEach(function (val) {
+            value.moy.push(Number(val[4]))
         })
-    } catch (err) {
-        new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
-    }
+        value.price = value.moy[value.moy.length - 1]
+
+        let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+        let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+        value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
+            ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+        value.lenVol = minVolume.minQty.split('.')[0] === "0"
+            ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+
+        return value
+    }).catch(err => {
+        console.error(err)
+    })
 }
 
 // get total balances
@@ -116,151 +100,142 @@ function getNoOrders(value, balances) {
 
 // buy currency
 function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
-    try {
-        let counter = 0;
-        Object.entries(curr).forEach(function ([, value]) {
+    let counter = 0;
+    Object.entries(curr).forEach(function ([, value]) {
 
-            let volume = String(mise / value.price)
-            volume = volume.substr(0, volume.split('.')[0].length
-                + (value.lenVol ? 1 : 0) + value.lenVol)
+        let volume = String(mise / value.price)
+        volume = volume.substr(0, volume.split('.')[0].length
+            + (value.lenVol ? 1 : 0) + value.lenVol)
 
-            let price = String(value.price * (config.profit() / 100 + 1))
-            price = price.substr(0, price.split('.')[0].length
-                + (value.lenPrice ? 1 : 0) + value.lenPrice)
+        let price = String(value.price * (config.profit() / 100 + 1))
+        price = price.substr(0, price.split('.')[0].length
+            + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-            value.price = String(value.price * volume)
-            value.price = value.price.substr(0, value.price.split('.')[0].length
-                + (value.lenPrice ? 1 : 0) + value.lenPrice)
+        value.price = String(value.price * volume)
+        value.price = value.price.substr(0, value.price.split('.')[0].length
+            + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-            if (balances[config.feeMoney()].available > (value.price * config.feeValue() / 100)) {
-                open += Number(value.price)
-                now += Number(value.price)
-                want += Number(price * volume)
+        if (balances[config.feeMoney()].available > (value.price * config.feeValue() / 100)) {
+            open += Number(value.price)
+            now += Number(value.price)
+            want += Number(price * volume)
 
-                binance.marketBuy(value.symbol, volume).then(() => {
-                    binance.sell(value.symbol, volume, price, {type: 'LIMIT'}).then(() => {
-                        new_orders.push(func.order(
-                            value.symbol,
-                            volume,
-                            price * volume,
-                            value.price,
-                            value.price,
-                            Date.now(),
-                            0
-                        ))
+            binance.marketBuy(value.symbol, volume).then(() => {
+                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}).then(() => {
+                    new_orders.push(func.order(
+                        value.symbol,
+                        volume,
+                        price * volume,
+                        value.price,
+                        value.price,
+                        Date.now(),
+                        0
+                    ))
 
-                        balances[config.baseMoney()].available -= mise
-                        balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
-                    }).catch(error => {
-                        let responseJson = JSON.parse(error.body)
-                        console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
-                            + " " + volume)
-                    })
+                    balances[config.baseMoney()].available -= mise
+                    balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
                 }).catch(error => {
                     let responseJson = JSON.parse(error.body)
                     console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
                         + " " + volume)
-                }).finally(() => {
-                    if (++counter === curr.length)
-                        getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
                 })
-            } else {
-                getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-                console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
-            }
-        });
-    } catch (err) {
-        console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
-    }
+            }).catch(error => {
+                let responseJson = JSON.parse(error.body)
+                console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                    + " " + volume)
+            }).finally(() => {
+                console.log("finally sell")
+                if (++counter === curr.length)
+                    getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+            })
+        } else {
+            getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+            console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
+        }
+    });
 }
 
 // Remove cryptocurrencies that do not match the purchase condition
 function prepareBuying(currencies, balances, openOrders, total) {
-    try {
-        let curr = [], details = [], new_orders = [], orders = []
-        let counter = 0, open = 0, now = 0, want = 0, mise = total * config.mise() / 100;
+    let curr = [], details = [], new_orders = [], orders = []
+    let counter = 0, open = 0, now = 0, want = 0, mise = total * config.mise() / 100;
 
-        Object.entries(currencies).forEach(function ([, value]) {
+    Object.entries(currencies).forEach(function ([, value]) {
 
-            let val = Object.entries(openOrders).filter(([, val]) => val.symbol === value.symbol)
-            if (val.length > 0) {
-                val = val[0][1]
+        let val = Object.entries(openOrders).filter(([, val]) => val.symbol === value.symbol)
+        if (val.length > 0) {
+            val = val[0][1]
 
-                let volume = String(val['origQty'])
-                volume = volume.substr(0, volume.split('.')[0].length
-                    + (value.lenVol ? 1 : 0) + value.lenVol)
+            let volume = String(val['origQty'])
+            volume = volume.substr(0, volume.split('.')[0].length
+                + (value.lenVol ? 1 : 0) + value.lenVol)
 
-                let openValue = String(val.price / (config.profit() / 100 + 1) * val['origQty'])
-                openValue = openValue.substr(0, openValue.split('.')[0].length
-                    + (value.lenPrice ? 1 : 0) + value.lenPrice)
+            let openValue = String(val.price / (config.profit() / 100 + 1) * val['origQty'])
+            openValue = openValue.substr(0, openValue.split('.')[0].length
+                + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                let nowValue = String(value.price * val['origQty'])
-                nowValue = nowValue.substr(0, nowValue.split('.')[0].length
-                    + (value.lenPrice ? 1 : 0) + value.lenPrice)
+            let nowValue = String(value.price * val['origQty'])
+            nowValue = nowValue.substr(0, nowValue.split('.')[0].length
+                + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                let wantValue = String(val.price * val['origQty'])
-                wantValue = wantValue.substr(0, wantValue.split('.')[0].length
-                    + (value.lenPrice ? 1 : 0) + value.lenPrice)
+            let wantValue = String(val.price * val['origQty'])
+            wantValue = wantValue.substr(0, wantValue.split('.')[0].length
+                + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                open += Number(openValue)
-                now += Number(nowValue)
-                want += Number(wantValue)
+            open += Number(openValue)
+            now += Number(nowValue)
+            want += Number(wantValue)
 
-                orders.push(func.order(
-                    value.symbol,
-                    volume,
-                    wantValue,
-                    openValue,
-                    nowValue,
-                    val['time'],
-                    (nowValue / openValue * 100) - 100
-                ))
+            orders.push(func.order(
+                value.symbol,
+                volume,
+                wantValue,
+                openValue,
+                nowValue,
+                val['time'],
+                (nowValue / openValue * 100) - 100
+            ))
+        }
+
+        if (Number(balances[value['baseAsset']].onOrder) === 0
+            && Number(balances[value['baseAsset']].available) === 0) {
+
+            let max = Math.max.apply(null, value.moy)
+            value.moy = func.lAvg(value.moy)
+            let prc = ((max - value.moy) / value.moy) * 100
+
+            if (prc >= config.prc()) {
+                value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
+                    / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
+
+                if (value.amprice <= 0)
+                    details.push(value.symbol)
             }
 
-            if (Number(balances[value['baseAsset']].onOrder) === 0
-                && Number(balances[value['baseAsset']].available) === 0) {
+            if (value.moy * (100 - config.median()[1]) / 100 > value.price
+                || value.moy * (100 - config.median()[0]) / 100 < value.price
+                || value.price <= 0 || prc < 10)
+                curr = Object.entries(currencies).filter(([, val]) => val.symbol !== value.symbol)
+        }
 
-                let max = Math.max.apply(null, value.moy)
-                value.moy = func.lAvg(value.moy)
-                let prc = ((max - value.moy) / value.moy) * 100
+        if (++counter === currencies.length) {
+            let curr2 = []
+            curr = curr.filter(([, val]) => val.amprice <= 0)
+            Object.entries(curr).forEach(([, [, v]]) => {
+                curr2.push(v)
+            })
 
-                if (prc >= config.prc()) {
-                    value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
-                        / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
-
-                    if (value.amprice <= 0)
-                        details.push(value.symbol)
-                }
-
-                if (value.moy * (100 - config.median()[1]) / 100 > value.price
-                    || value.moy * (100 - config.median()[0]) / 100 < value.price
-                    || value.price <= 0 || prc < 10)
-                    curr = Object.entries(currencies).filter(([, val]) => val.symbol !== value.symbol)
-            }
-
-            if (++counter === currencies.length) {
-                let curr2 = []
-                curr = curr.filter(([, val]) => val.amprice <= 0)
-                Object.entries(curr).forEach(([, [, v]]) => {
-                    curr2.push(v)
-                })
-
-                let nbMise = Number(String((Number(balances[config.baseMoney()].available)
-                    - config.keep_balance()) / mise).split('.')[0])
-                if (nbMise > 0 && (!config.onlyShort() || Number((details.length / currencies.length * 100)
-                    .toFixed(0)) >= config.marketPrc())) {
-                    curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
-                    if (curr.length > 0)
-                        buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                    else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-                } else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-            }
-        });
-    } catch (err) {
-        console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
-    }
+            let nbMise = Number(String((Number(balances[config.baseMoney()].available)
+                - config.keep_balance()) / mise).split('.')[0])
+            if (nbMise > 0 && (!config.onlyShort() || Number((details.length / currencies.length * 100)
+                .toFixed(0)) >= config.marketPrc())) {
+                curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
+                if (curr.length > 0)
+                    buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
+                else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+            } else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+        }
+    });
 }
 
 // Return status of orders, balances and cryptos
@@ -306,8 +281,6 @@ function getOutput(currencies, curr, details, new_orders, balances, orders, tota
     if (new_orders.length > 0) console.table(new_orders)
     console.table(stateCurrencies)
     console.table(stateBalance)
-
-    new Promise(res => setTimeout(res, config.refresh())).then(() => getBalances());
 }
 
 // Start bot
