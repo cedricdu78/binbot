@@ -144,7 +144,6 @@ function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances,
                 console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
                     + " " + volume)
             }).finally(() => {
-                console.log("finally sell")
                 if (++counter === curr.length)
                     getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
             })
