@@ -92,9 +92,9 @@ function getNoOrders(value, balances) {
 }
 
 // buy currency
-function buyLimit(currenciesLen, curr, new_orders, balances, orders, total, open, now, want, mise) {
+function buyLimit(currenciesLen, curr, balances, orders, total, open, now, want, mise) {
     try {
-        let counter = 0;
+        let counter = 0, new_orders = []
         Object.entries(curr).forEach(function ([, value]) {
 
             let volume = String(mise / value.price)
@@ -158,7 +158,7 @@ function buyLimit(currenciesLen, curr, new_orders, balances, orders, total, open
 // Remove cryptocurrencies that do not match the purchase condition
 function prepareBuy(currencies, balances, openOrders, total) {
     try {
-        let curr = [], new_orders = [], orders = []
+        let curr = [], orders = []
         let counter = 0, open = 0, now = 0, want = 0, mise = total * config.mise() / 100;
 
         Object.entries(currencies).forEach(function ([, value]) {
@@ -223,9 +223,9 @@ function prepareBuy(currencies, balances, openOrders, total) {
                     .toFixed(0)) >= config.marketPrc())) {
                     curr = curr.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
-                        buyLimit(currencies.length, curr, new_orders, balances, orders, total, open, now, want, mise)
-                    else getOutput(currencies.length, curr.length, new_orders, balances, orders, total, open, now, want)
-                } else getOutput(currencies.length, curr.length, new_orders, balances, orders, total, open, now, want)
+                        buyLimit(currencies.length, curr, balances, orders, total, open, now, want, mise)
+                    else getOutput(currencies.length, curr.length, [], balances, orders, total, open, now, want)
+                } else getOutput(currencies.length, curr.length, [], balances, orders, total, open, now, want)
             }
         });
     } catch (err) {
