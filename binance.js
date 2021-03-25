@@ -28,7 +28,7 @@ function getOpenOrders(balances) {
 
 // get currencies available
 function getCurrencies(balances, openOrders) {
-    binance.openOrders().then(exchangeInfo => {
+    binance.exchangeInfo().then(exchangeInfo => {
         getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) =>
             value.symbol.endsWith(config.baseMoney())
             && !value.symbol.endsWith('DOWN' + config.baseMoney())
