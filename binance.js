@@ -68,7 +68,6 @@ function getHistories(currencies, balances, openOrders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
@@ -93,7 +92,6 @@ function getNoOrders(balances, currencies, openOrders) {
         })
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
@@ -158,7 +156,6 @@ function buyLimit(currencies, curr, new_orders, total, details, balances, orders
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
@@ -249,7 +246,6 @@ function prepareBuy(currencies, balances, openOrders, total) {
         });
     } catch (err) {
         console.error(err)
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
     }
 }
 
@@ -296,8 +292,6 @@ function getOutput(currencies, curr, details, new_orders, balances, orders, tota
     if (new_orders.length > 0) console.table(new_orders)
     console.table(stateCurrencies)
     console.table(stateBalance)
-
-    new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances());
 }
 
 // Start bot
