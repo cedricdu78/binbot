@@ -17,7 +17,7 @@ module.exports = {
     mise: function () { return 4 },
     profit: function () { return 10 },
     interval: function () { return ['15m', 673] },
-    median: function () { return [5, 20] },
+    median: function () { return [5, 30] },
     prc: function () { return 10 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
