@@ -208,11 +208,11 @@ function prepareBuy(currencies, balances, openOrders, total) {
                     && value.moy * (100 - config.median()[0]) / 100 >= value.price
                     && value.price > 0 && prc >= config.prc()) {
 
-                    value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
+                    value.am_price = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
                         / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 
-                    if (value.amprice <= 0)
-                        curr.push(value)
+                    curr.push({symbol: value.symbol, price: value.price, lenVol: value.lenVol, lenPrice: value.lenPrice,
+                        am_price: value.am_price})
                 }
             }
 
@@ -221,7 +221,7 @@ function prepareBuy(currencies, balances, openOrders, total) {
                     - config.keep_balance()) / mise).split('.')[0])
                 if (nbMise > 0 && (!config.onlyShort() || Number((curr.length / currencies.length * 100)
                     .toFixed(0)) >= config.marketPrc())) {
-                    curr = curr.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
+                    curr = curr.sort((a, b) => a.am_price - b.am_price).slice(0, nbMise <= 29 ? nbMise : 29)
                     if (curr.length > 0)
                         buyLimit(currencies.length, curr, balances, orders, total, open, now, want, mise)
                     else getOutput(currencies.length, curr.length, [], balances, orders, total, open, now, want)
