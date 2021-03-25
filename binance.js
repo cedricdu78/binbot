@@ -99,7 +99,7 @@ function getNoOrders(value, balances) {
 }
 
 // buy currency
-function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances, orders, mise, open, now, want) {
+function buyLimit(currencies, curr, new_orders, total, available, BuyNb, balances, orders, mise, open, now, want) {
     let counter = 0;
     Object.entries(curr).forEach(function ([, value]) {
 
@@ -145,10 +145,10 @@ function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances,
                     + " " + volume)
             }).finally(() => {
                 if (++counter === curr.length)
-                    getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                    getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
             })
         } else {
-            getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+            getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
             console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
         }
     });
@@ -156,7 +156,7 @@ function buyLimit(currencies, curr, new_orders, total, details, BuyNb, balances,
 
 // Remove cryptocurrencies that do not match the purchase condition
 function prepareBuying(currencies, balances, openOrders, total) {
-    let curr = [], details = [], new_orders = [], orders = []
+    let curr = [], available = [], new_orders = [], orders = []
     let counter = 0, open = 0, now = 0, want = 0, mise = total * config.mise() / 100;
 
     Object.entries(currencies).forEach(function ([, value]) {
@@ -203,49 +203,39 @@ function prepareBuying(currencies, balances, openOrders, total) {
             value.moy = func.lAvg(value.moy)
             let prc = ((max - value.moy) / value.moy) * 100
 
-            if (prc >= config.prc()) {
+            if (value.moy * (100 - config.median()[1]) / 100 <= value.price
+                && value.moy * (100 - config.median()[0]) / 100 >= value.price
+                && value.price > 0 && prc >= 10) {
                 value.amprice = Number((((value.price - (value.moy * (100 - config.median()[0]) / 100))
                     / (value.moy * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
 
-                if (value.amprice <= 0)
-                    details.push(value.symbol)
-            }
-
-            if (value.moy * (100 - config.median()[1]) / 100 > value.price
-                || value.moy * (100 - config.median()[0]) / 100 < value.price
-                || value.price <= 0 || prc < 10)
-                curr = Object.entries(currencies).filter(([, val]) => val.symbol !== value.symbol)
+                available.push(value.symbol)
+            } else curr = Object.entries(currencies).filter(([, val]) => val.symbol !== value.symbol)
         }
 
         if (++counter === currencies.length) {
-            let curr2 = []
-            curr = curr.filter(([, val]) => val.amprice <= 0)
-            Object.entries(curr).forEach(([, [, v]]) => {
-                curr2.push(v)
-            })
-
             let nbMise = Number(String((Number(balances[config.baseMoney()].available)
                 - config.keep_balance()) / mise).split('.')[0])
-            if (nbMise > 0 && (!config.onlyShort() || Number((details.length / currencies.length * 100)
+            if (nbMise > 0 && (!config.onlyShort() || Number((available.length / currencies.length * 100)
                 .toFixed(0)) >= config.marketPrc())) {
-                curr = curr2.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
+                curr = curr.sort((a, b) => a.amprice - b.amprice).slice(0, nbMise <= 29 ? nbMise : 29)
                 if (curr.length > 0)
-                    buyLimit(currencies, curr, new_orders, total, details, balances, orders, mise, open, now, want)
-                else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
-            } else getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want)
+                    buyLimit(currencies, curr, new_orders, total, available, balances, orders, mise, open, now, want)
+                else getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
+            } else getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want)
         }
     });
 }
 
 // Return status of orders, balances and cryptos
-function getOutput(currencies, curr, details, new_orders, balances, orders, total, open, now, want) {
+function getOutput(currencies, curr, available, new_orders, balances, orders, total, open, now, want) {
 
     const stateCurrencies = {
         [config.colCrypto()[0]]: {
-            [config.colCrypto()[1]]: details.length, [config.colCrypto()[2]]: currencies.length,
-            '%': Number((details.length / currencies.length * 100).toFixed(0)),
+            [config.colCrypto()[1]]: available.length, [config.colCrypto()[2]]: currencies.length,
+            '%': Number((available.length / currencies.length * 100).toFixed(0)),
             [config.colCrypto()[3]]: config.colCrypto()[4] + ' '
-            + (Number((details.length / currencies.length * 100).toFixed(0)) >= config.marketPrc() ? config.colCrypto()[5]
+            + (Number((available.length / currencies.length * 100).toFixed(0)) >= config.marketPrc() ? config.colCrypto()[5]
                 : config.colCrypto()[6])
         }
     }
