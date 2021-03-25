@@ -48,11 +48,11 @@ function getCurrencies(balances, openOrders) {
                         balances[config.feeMoney()].available *= value.price
 
                     currencies.push(value)
-                }).catch(err => {
-                    console.error(err)
-                }).finally(() => {
+
                     if (++counter === exchangeInfo['symbols'].length)
                         prepareBuying(currencies, balances, openOrders, total)
+                }).catch(err => {
+                    console.error(err)
                 })
             } else if (++counter === exchangeInfo['symbols'].length)
                 prepareBuying(currencies, balances, openOrders, total)
