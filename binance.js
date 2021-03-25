@@ -161,10 +161,8 @@ function prepareBuying(currencies, balances, openOrders, total) {
 
     Object.entries(currencies).forEach(function ([, value]) {
 
-        let val = Object.entries(openOrders).filter(([, val]) => val.symbol === value.symbol)
-        if (val.length > 0) {
-            val = val[0][1]
-
+        let val = openOrders.filter(val => val.symbol === value.symbol)[0]
+        if (val !== undefined) {
             let volume = String(val['origQty'])
             volume = volume.substr(0, volume.split('.')[0].length
                 + (value.lenVol ? 1 : 0) + value.lenVol)
