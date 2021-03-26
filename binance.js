@@ -43,10 +43,10 @@ function getCurrencies(balances, openOrders) {
                         getNoOrders(value, balances)
                         currencies.push({symbol: value.symbol, price: value.price, lenVol: value.lenVol,
                             lenPrice: value.lenPrice, baseAsset: value.baseAsset, moy: value.moy})
-                    }
 
-                    if (++counter === exchangeInfo['symbols'].length)
-                        prepareBuy(currencies, balances, openOrders, total)
+                        if (++counter === exchangeInfo['symbols'].length)
+                            prepareBuy(currencies, balances, openOrders, total)
+                    }
                 }).catch(error => console.error(error))
             } else if (++counter === exchangeInfo['symbols'].length)
                 prepareBuy(currencies, balances, openOrders, total)
