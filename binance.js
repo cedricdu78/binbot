@@ -94,7 +94,6 @@ function getBalances() {
                             binance.candlesticks(value.symbol, config.interval()[0], null, {
                                 startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
                             }).then(res => {
-
                                 if (histories[value.symbol] !== undefined) {
                                     for (let i = 0; i < res.length; i++) {
                                         i === 0 ? histories[value.symbol].pop() : histories[value.symbol].shift()
@@ -105,72 +104,74 @@ function getBalances() {
                                     })
                                 } else histories[value.symbol] = res
 
-                                value.moy = []
-                                histories[value.symbol].forEach(function (val) {
-                                    value.moy.push(Number(val[4]))
-                                })
-                                value.price = value.moy[value.moy.length - 1]
+                                if (histories[value.symbol].length > 650) {
+                                    value.moy = []
+                                    histories[value.symbol].forEach(function (val) {
+                                        value.moy.push(Number(val[4]))
+                                    })
+                                    value.price = value.moy[value.moy.length - 1]
 
-                                let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-                                let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-                                value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
-                                    ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
-                                value.lenVol = minVolume.minQty.split('.')[0] === "0"
-                                    ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+                                    let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+                                    let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+                                    value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
+                                        ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+                                    value.lenVol = minVolume.minQty.split('.')[0] === "0"
+                                        ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-                                if (Number(balances[value['baseAsset']].onOrder) === 0
-                                    && Number(balances[value['baseAsset']].available) === 0) {
+                                    if (Number(balances[value['baseAsset']].onOrder) === 0
+                                        && Number(balances[value['baseAsset']].available) === 0) {
 
-                                    let max = Math.max.apply(null, value.moy)
-                                    value.moy = func.lAvg(value.moy)
-                                    let prc = ((max - value.moy) / value.moy) * 100
+                                        let max = Math.max.apply(null, value.moy)
+                                        value.moy = func.lAvg(value.moy)
+                                        let prc = ((max - value.moy) / value.moy) * 100
 
-                                    if (value.moy * (100 - config.median()[1]) / 100 <= value.price
-                                        && value.moy * (100 - config.median()[0]) / 100 >= value.price
-                                        && value.price > 0 && prc >= config.prc() && nbMise >= 1 && nbMise--) {
+                                        if (value.moy * (100 - config.median()[1]) / 100 <= value.price
+                                            && value.moy * (100 - config.median()[0]) / 100 >= value.price
+                                            && value.price > 0 && prc >= config.prc() && nbMise >= 1 && nbMise--) {
 
-                                        let volume = String(mise / value.price)
-                                        volume = volume.substr(0, volume.split('.')[0].length
-                                            + (value.lenVol ? 1 : 0) + value.lenVol)
+                                            let volume = String(mise / value.price)
+                                            volume = volume.substr(0, volume.split('.')[0].length
+                                                + (value.lenVol ? 1 : 0) + value.lenVol)
 
-                                        let price = String(value.price * (config.profit() / 100 + 1))
-                                        price = price.substr(0, price.split('.')[0].length
-                                            + (value.lenPrice ? 1 : 0) + value.lenPrice)
+                                            let price = String(value.price * (config.profit() / 100 + 1))
+                                            price = price.substr(0, price.split('.')[0].length
+                                                + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                                        value.price = String(value.price * volume)
-                                        value.price = value.price.substr(0, value.price.split('.')[0].length
-                                            + (value.lenPrice ? 1 : 0) + value.lenPrice)
+                                            value.price = String(value.price * volume)
+                                            value.price = value.price.substr(0, value.price.split('.')[0].length
+                                                + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                                        console.table({
-                                            Buying: func.order(
-                                                value.symbol,
-                                                volume,
-                                                price * volume,
-                                                value.price,
-                                                value.price,
-                                                Date.now(),
-                                                0
-                                            )
-                                        })
+                                            console.table({
+                                                Buying: func.order(
+                                                    value.symbol,
+                                                    volume,
+                                                    price * volume,
+                                                    value.price,
+                                                    value.price,
+                                                    Date.now(),
+                                                    0
+                                                )
+                                            })
 
-                                        binance.marketBuy(value.symbol, volume, (error,) => {
-                                            if (error !== null) {
-                                                let responseJson = JSON.parse(error.body)
-                                                console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
-                                                    + " " + volume)
-                                            } else {
-                                                binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
-                                                    if (error !== null) {
-                                                        let responseJson = JSON.parse(error.body)
-                                                        console.error(value.symbol + " [" + responseJson.code + "]: "
-                                                            + responseJson["msg"] + " " + price + " " + volume)
-                                                    } else {
-                                                        balances[config.baseMoney()].available -= mise
-                                                        balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
-                                                    }
-                                                })
-                                            }
-                                        })
+                                            binance.marketBuy(value.symbol, volume, (error,) => {
+                                                if (error !== null) {
+                                                    let responseJson = JSON.parse(error.body)
+                                                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                                                        + " " + volume)
+                                                } else {
+                                                    binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                                                        if (error !== null) {
+                                                            let responseJson = JSON.parse(error.body)
+                                                            console.error(value.symbol + " [" + responseJson.code + "]: "
+                                                                + responseJson["msg"] + " " + price + " " + volume)
+                                                        } else {
+                                                            balances[config.baseMoney()].available -= mise
+                                                            balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
+                                                        }
+                                                    })
+                                                }
+                                            })
+                                        }
                                     }
                                 }
                             })
