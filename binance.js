@@ -94,37 +94,37 @@ function buyLimit(currenciesLen, curr, balances, orders, total, open, now, want,
                 now += Number(value.price)
                 want += Number(price * volume)
 
-                // binance.marketBuy(value.symbol, volume, (error,) => {
-                //     if (error !== null) {
-                //         let responseJson = JSON.parse(error.body)
-                //         console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
-                //             + " " + volume)
-                //     } else {
-                //         binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
-                //             if (error !== null) {
-                //                 let responseJson = JSON.parse(error.body)
-                //                 console.error(value.symbol + " [" + responseJson.code + "]: "
-                //                     + responseJson["msg"] + " " + price + " " + volume)
-                //             } else {
-                //                 new_orders.push(func.order(
-                //                     value.symbol,
-                //                     volume,
-                //                     price * volume,
-                //                     value.price,
-                //                     value.price,
-                //                     Date.now(),
-                //                     0
-                //                 ))
-                //
-                //                 balances[config.baseMoney()].available -= mise
-                //                 balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
-                //
-                //                 if (++counter === curr.length)
-                //                     getOutput(currenciesLen, curr.length, new_orders, balances, orders, total, open, now, want)
-                //             }
-                //         })
-                //     }
-                // })
+                binance.marketBuy(value.symbol, volume, (error,) => {
+                    if (error !== null) {
+                        let responseJson = JSON.parse(error.body)
+                        console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                            + " " + volume)
+                    } else {
+                        binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                            if (error !== null) {
+                                let responseJson = JSON.parse(error.body)
+                                console.error(value.symbol + " [" + responseJson.code + "]: "
+                                    + responseJson["msg"] + " " + price + " " + volume)
+                            } else {
+                                new_orders.push(func.order(
+                                    value.symbol,
+                                    volume,
+                                    price * volume,
+                                    value.price,
+                                    value.price,
+                                    Date.now(),
+                                    0
+                                ))
+
+                                balances[config.baseMoney()].available -= mise
+                                balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
+
+                                if (++counter === curr.length)
+                                    getOutput(currenciesLen, curr.length, new_orders, balances, orders, total, open, now, want)
+                            }
+                        })
+                    }
+                })
             } else {
                 getOutput(currenciesLen, curr.length, new_orders, balances, orders, total, open, now, want)
                 console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
