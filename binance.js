@@ -71,9 +71,7 @@ function getHistories(value) {
             ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
         return value
-    }).catch(error => {
-        console.error(error)
-    })
+    }).catch(error => console.error(error))
 }
 
 function getTotal(value, balances) {
