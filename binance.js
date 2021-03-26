@@ -24,6 +24,8 @@ const binance = new Binance().options({
 └────────────┴─────────┴─────────┴─────────┘
  */
 
+let histories = []
+
 function getBalances() {
     binance.balance().then(balances => {
         binance.openOrders().then(openOrders => {
@@ -82,9 +84,29 @@ function getBalances() {
                             && !value.symbol.endsWith('BEAR' + config.baseMoney())
                             && value.status !== 'BREAK') {
 
-                            binance.candlesticks(value.symbol, config.interval()[0], null, {limit: config.interval()[1]}).then(res => {
+                            let startDate = new Date()
+                            let endDate = new Date()
+                            startDate.setDate(startDate.getDate() - 7)
+
+                            if (histories[value.symbol] !== undefined)
+                                startDate = new Date(histories[value.symbol][histories[value.symbol].length - 1][0])
+
+                            binance.candlesticks(value.symbol, config.interval()[0], null, {
+                                startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
+                            }).then(res => {
+
+                                if (histories[value.symbol] !== undefined) {
+                                    for (let i = 0; i < res.length; i++) {
+                                        i === 0 ? histories[value.symbol].pop() : histories[value.symbol].shift()
+                                    }
+
+                                    res.forEach(v => {
+                                        histories[value.symbol].push(v)
+                                    })
+                                } else histories[value.symbol] = res
+
                                 value.moy = []
-                                res.forEach(function (val) {
+                                histories[value.symbol].forEach(function (val) {
                                     value.moy.push(Number(val[4]))
                                 })
                                 value.price = value.moy[value.moy.length - 1]
