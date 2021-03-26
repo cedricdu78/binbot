@@ -26,57 +26,38 @@ function getOpenOrders(balances) {
 // get currencies available
 function getCurrencies(balances, openOrders) {
     binance.exchangeInfo().then(exchangeInfo => {
-        let total = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder),
-            counter = 0, currencies = []
-
-        Object.entries(exchangeInfo['symbols']).forEach(([, value]) => {
-            if (value.symbol.endsWith(config.baseMoney())
-                && !value.symbol.endsWith('DOWN' + config.baseMoney())
-                && !value.symbol.endsWith('UP' + config.baseMoney())
-                && !value.symbol.endsWith('BULL' + config.baseMoney())
-                && !value.symbol.endsWith('BEAR' + config.baseMoney())
-                && value.status !== 'BREAK') {
-
-                getHistories(value).then(value => {
-                    if (value !== undefined) {
-                        total += getTotal(value, balances)
-                        getNoOrders(value, balances)
-                        currencies.push({symbol: value.symbol, price: value.price, lenVol: value.lenVol,
-                            lenPrice: value.lenPrice, baseAsset: value.baseAsset, moy: value.moy})
-
-                        if (++counter === exchangeInfo['symbols'].length)
-                            prepareBuy(currencies, balances, openOrders, total)
-                    }
-                }).catch(error => console.error(error))
-            } else if (++counter === exchangeInfo['symbols'].length)
-                prepareBuy(currencies, balances, openOrders, total)
-        })
+        getHistories(Object.entries(exchangeInfo['symbols']).filter(([, value]) => value.symbol.endsWith(config.baseMoney())
+            && !value.symbol.endsWith('DOWN' + config.baseMoney())
+            && !value.symbol.endsWith('UP' + config.baseMoney())
+            && !value.symbol.endsWith('BULL' + config.baseMoney())
+            && !value.symbol.endsWith('BEAR' + config.baseMoney())
+            && value.status !== 'BREAK'), balances, openOrders)
     }).catch(error => console.error(error))
 }
 
 // get history per currency
-function getHistories(value) {
-    return binance.candlesticks(value.symbol, config.interval()[0], null, {limit: config.interval()[1]}).then(res => {
-        value.moy = []
-        res.forEach(function (val) {
-            value.moy.push(Number(val[4]))
-        })
-        value.price = value.moy[value.moy.length - 1]
+function getHistories(currencies, balances, openOrders) {
+    let counter = 0
+    Object.entries(currencies).forEach(function ([, [, value]]) {
+        binance.candlesticks(value.symbol, config.interval()[0], null, {limit: config.interval()[1]}).then(res => {
+            value.moy = []
+            res.forEach(function (val) {
+                value.moy.push(Number(val[4]))
+            })
+            value.price = value.moy[value.moy.length - 1]
 
-        let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
-        let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
-        value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
-            ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
-        value.lenVol = minVolume.minQty.split('.')[0] === "0"
-            ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
+            let minPrice = (value['filters'].filter(val => val['filterType'] === 'PRICE_FILTER'))[0]
+            let minVolume = (value['filters'].filter(val => val['filterType'] === 'LOT_SIZE'))[0]
+            value.lenPrice = minPrice.minPrice.split('.')[0] === "0"
+                ? (minPrice.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+            value.lenVol = minVolume.minQty.split('.')[0] === "0"
+                ? (minVolume.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-        return value
-    }).catch(error => console.error(error))
-}
+            if (++counter === currencies.length)
+                prepareBuy(currencies, balances, openOrders)
 
-function getTotal(value, balances) {
-    return value.price * Number(balances[value['baseAsset']].available)
-        + value.price * Number(balances[value['baseAsset']].onOrder)
+        }).catch(error => console.error(error))
+    })
 }
 
 // get currency without order
@@ -113,37 +94,37 @@ function buyLimit(currenciesLen, curr, balances, orders, total, open, now, want,
                 now += Number(value.price)
                 want += Number(price * volume)
 
-                binance.marketBuy(value.symbol, volume, (error,) => {
-                    if (error !== null) {
-                        let responseJson = JSON.parse(error.body)
-                        console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
-                            + " " + volume)
-                    } else {
-                        binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
-                            if (error !== null) {
-                                let responseJson = JSON.parse(error.body)
-                                console.error(value.symbol + " [" + responseJson.code + "]: "
-                                    + responseJson["msg"] + " " + price + " " + volume)
-                            } else {
-                                new_orders.push(func.order(
-                                    value.symbol,
-                                    volume,
-                                    price * volume,
-                                    value.price,
-                                    value.price,
-                                    Date.now(),
-                                    0
-                                ))
-
-                                balances[config.baseMoney()].available -= mise
-                                balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
-
-                                if (++counter === curr.length)
-                                    getOutput(currenciesLen, curr.length, new_orders, balances, orders, total, open, now, want)
-                            }
-                        })
-                    }
-                })
+                // binance.marketBuy(value.symbol, volume, (error,) => {
+                //     if (error !== null) {
+                //         let responseJson = JSON.parse(error.body)
+                //         console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + price
+                //             + " " + volume)
+                //     } else {
+                //         binance.sell(value.symbol, volume, price, {type: 'LIMIT'}, (error,) => {
+                //             if (error !== null) {
+                //                 let responseJson = JSON.parse(error.body)
+                //                 console.error(value.symbol + " [" + responseJson.code + "]: "
+                //                     + responseJson["msg"] + " " + price + " " + volume)
+                //             } else {
+                //                 new_orders.push(func.order(
+                //                     value.symbol,
+                //                     volume,
+                //                     price * volume,
+                //                     value.price,
+                //                     value.price,
+                //                     Date.now(),
+                //                     0
+                //                 ))
+                //
+                //                 balances[config.baseMoney()].available -= mise
+                //                 balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
+                //
+                //                 if (++counter === curr.length)
+                //                     getOutput(currenciesLen, curr.length, new_orders, balances, orders, total, open, now, want)
+                //             }
+                //         })
+                //     }
+                // })
             } else {
                 getOutput(currenciesLen, curr.length, new_orders, balances, orders, total, open, now, want)
                 console.error("Veuillez acheter du " + config.feeMoney() + " pour les frais")
@@ -155,12 +136,18 @@ function buyLimit(currenciesLen, curr, balances, orders, total, open, now, want,
 }
 
 // Remove cryptocurrencies that do not match the purchase condition
-function prepareBuy(currencies, balances, openOrders, total) {
+function prepareBuy(currencies, balances, openOrders) {
     try {
         let curr = [], orders = []
-        let counter = 0, open = 0, now = 0, want = 0, mise = total * config.mise() / 100;
+        let counter = 0, open = 0, now = 0, want = 0,
+            total = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder)
 
-        Object.entries(currencies).forEach(function ([, value]) {
+        Object.entries(currencies).forEach(function ([, [, value]]) {
+
+            total += value.price * (Number(balances[value['baseAsset']].available)
+                + Number(balances[value['baseAsset']].onOrder))
+
+            getNoOrders(value, balances)
 
             let order = Object.entries(openOrders).filter(([, val]) => val.symbol === value.symbol)[0]
             if (order !== undefined) {
@@ -216,6 +203,7 @@ function prepareBuy(currencies, balances, openOrders, total) {
             }
 
             if (++counter === currencies.length) {
+                let mise = total * config.mise() / 100
                 let nbMise = Number(String((Number(balances[config.baseMoney()].available)
                     - config.keep_balance()) / mise).split('.')[0])
                 if (nbMise > 0 && (!config.onlyShort() || Number((curr.length / currencies.length * 100)
