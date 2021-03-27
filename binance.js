@@ -183,6 +183,8 @@ function getBalances() {
                 })
             })
         })
+    }).finally(() => {
+        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances())
     })
 }
 
