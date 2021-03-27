@@ -16,7 +16,7 @@ module.exports = {
     // prc :        Percentage difference between the average and the maximum over the week
     mise: function () { return 4 },
     profit: function () { return 10 },
-    interval: function () { return ['15m', 673] },
+    interval: function () { return ['15m', 672] },
     median: function () { return [5, 30] },
     prc: function () { return 10 },
 
