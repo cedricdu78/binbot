@@ -3,10 +3,6 @@ const config = require('./config/config');
 const func = require('./lib/func');
 
 const Binance = require('node-binance-api');
-const binance = new Binance().options({
-    APIKEY: binSecret.key(),
-    APISECRET: binSecret.secret()
-});
 
 /*
 ┌────────────┬───────────┬───────┬────┬──────────────────┐
@@ -27,6 +23,12 @@ const binance = new Binance().options({
 let histories = []
 
 function getBalances() {
+
+    const binance = new Binance().options({
+        APIKEY: binSecret.key(),
+        APISECRET: binSecret.secret()
+    });
+
     binance.balance().then(balances => {
         binance.openOrders().then(openOrders => {
             const USD = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder)
