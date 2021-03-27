@@ -30,7 +30,7 @@ function getBalances() {
     binance.balance().then(balances => {
         binance.openOrders().then(openOrders => {
             const USD = Number(balances[config.baseMoney()].available) + Number(balances[config.baseMoney()].onOrder)
-            let total = USD
+            let resume = {total : USD, inOrder: 0}
 
             binance.bookTickers().then(bookTickers => {
 
@@ -41,12 +41,12 @@ function getBalances() {
                         && !key.endsWith('BULL' + config.baseMoney())
                         && !key.endsWith('BEAR' + config.baseMoney())) {
 
-                        total += value.ask * (Number(balances[key.replace('USDT', '')].available)
+                        resume.total += value.ask * (Number(balances[key.replace('USDT', '')].available)
                             + Number(balances[key.replace('USDT', '')].onOrder))
                     }
                 })
 
-                let mise = total * 4 / 100
+                let mise = resume.total * 4 / 100
                 let nbMise = USD / mise
                 let orders = []
 
@@ -63,15 +63,18 @@ function getBalances() {
                         order['time'],
                         (nowValue / openValue * 100) - 100
                     ))
+
+                    resume.inOrder += Number(order.price * order['origQty'])
                 })
 
                 if (orders.length > 0) console.table(orders.sort((a, b) => b.plusValue - a.plusValue))
                 console.table({
                     status: {
-                        Total: Number(total.toFixed(2)),
                         Mise: Number(mise.toFixed(2)),
                         BNB: Number((balances[config.feeMoney()].available * bookTickers[config.feeMoney() + config.baseMoney()].ask).toFixed(2)),
-                        USD: Number(USD.toFixed(2))
+                        USD: Number(USD.toFixed(2)),
+                        InOrder: Number(resume.inOrder.toFixed(2)),
+                        Total: Number(resume.total.toFixed(2))
                     }
                 })
 
@@ -180,9 +183,7 @@ function getBalances() {
                 })
             })
         })
-    }).finally(() => {
-        new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances())
     })
 }
 
-getBalances()
+new Promise(res => setTimeout(res, config.refresh())).finally(() => getBalances())
