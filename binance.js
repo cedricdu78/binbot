@@ -244,6 +244,7 @@ class Bot {
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
+                Num: this.exchangeInfo.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number((this.resume.target - (this.resume.target * config.profit() / 100)).toFixed(2)),
