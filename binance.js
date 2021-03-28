@@ -323,4 +323,4 @@ async function main() {
 }
 
 /* Start bot */
-start(0)
+start()
