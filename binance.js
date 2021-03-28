@@ -36,9 +36,9 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
-    resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0}
+    resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0, number: 0}
     nbMise = 0
-    
+
     async getBalances() {
         await this.api.balance().then(balances => this.balances = Object.entries(balances))
     }
@@ -131,7 +131,7 @@ class Bot {
     }
 
     getCurrenciesFilteredByHistories() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.histories[k.symbol].length === config.interval()[1])
+        this.exchangeInfo = this.exchangeInfo.filter(k => this.histories[k.symbol].length >= 600)
     }
 
     getAveragesAndPrice() {
@@ -167,9 +167,12 @@ class Bot {
 
     getCurrenciesFilteredByConditions() {
         this.exchangeInfo = this.exchangeInfo.filter(value => func.lAvg(value.moy) * (100 - config.median()[1]) / 100 <= value.price
-            && func.lAvg(value.moy) * (100 - config.median()[0]) / 100 >= value.price
-            && value.price > 0 && ((((Math.max.apply(null, value.moy)) - func.lAvg(value.moy)) / func.lAvg(value.moy)) * 100) >= config.prc()
-            && this.nbMise-- > 1)
+            && func.lAvg(value.moy) * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
+            && ((((Math.max.apply(null, value.moy)) - func.lAvg(value.moy)) / func.lAvg(value.moy)) * 100) >= config.prc())
+
+        this.resume.number = this.exchangeInfo.length
+
+        this.exchangeInfo = this.exchangeInfo.filter(() => this.nbMise-- > 1)
     }
 
     getPrecisions() {
@@ -206,8 +209,8 @@ class Bot {
                     console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + value.price
                         + " " + value.volume)
                 } else {
-                    this.balances[config.baseMoney()].available -= this.resume.mise
-                    this.balances[config.feeMoney()].available -= value.price * config.feeValue() / 100
+                    this.balances.filter(([k,]) => k === config.baseMoney())[0][1].available -= this.resume.mise
+                    this.balances.filter(([k,]) => k === config.feeMoney())[0][1].available -= value.price * config.feeValue() / 100
                 }
             })
         }
@@ -244,7 +247,7 @@ class Bot {
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
-                Num: this.exchangeInfo.length,
+                Num: this.resume.number,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number((this.resume.target - (this.resume.target * config.profit() / 100)).toFixed(2)),
