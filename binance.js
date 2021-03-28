@@ -206,7 +206,7 @@ class Bot {
             if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
                 continue
 
-            await this.api.marketBuy(value.symbol, value.volume, (error,) => {
+            await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
                 if (error !== null) {
                     let responseJson = JSON.parse(error.body)
                     console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
@@ -215,7 +215,7 @@ class Bot {
                     this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
                     this.resume.bnb -= Number(value.price) * config.feeValue() / 100
 
-                    this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
+                    await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
                         if (error !== null) {
                             let responseJson = JSON.parse(error.body)
                             console.error(value.symbol + " [" + responseJson.code + "]: "
