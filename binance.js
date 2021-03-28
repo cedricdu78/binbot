@@ -72,8 +72,7 @@ class Bot {
 
     getMise() {
         this.resume.mise = this.resume.total * 4 / 100
-        this.resume.mise += this.resume.mise * config.feeValue() / 100
-        this.nbMise = this.resume.available / this.resume.mise
+        this.nbMise = this.resume.available / (this.resume.mise + (this.resume.mise * config.feeValue() / 100))
     }
 
     getUnordered() {
