@@ -104,30 +104,33 @@ class Bot {
     }
 
     async getHistories() {
-        for (let i = 0; i < this.exchangeInfo.length; i++) {
-            let startDate = new Date()
-            let endDate = new Date()
-            startDate.setDate(startDate.getDate() - 7)
+        await new Promise((resolve, reject) => {
+            let counter = 0
+            this.exchangeInfo.forEach(value => {
+                let startDate = new Date()
+                let endDate = new Date()
+                startDate.setDate(startDate.getDate() - 7)
 
-            let value = this.exchangeInfo[i]
+                if (this.histories[value.symbol] !== undefined)
+                    startDate = new Date(this.histories[value.symbol][this.histories[value.symbol].length - 1][0])
 
-            if (this.histories[value.symbol] !== undefined)
-                startDate = new Date(this.histories[value.symbol][this.histories[value.symbol].length - 1][0])
+                this.api.candlesticks(value.symbol, config.interval()[0], null, {
+                    startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
+                }).then(res => {
+                    if (this.histories[value.symbol] !== undefined) {
+                        for (let i = 0; i < res.length; i++) {
+                            i === 0 ? this.histories[value.symbol].pop() : this.histories[value.symbol].shift()
+                        }
 
-            await this.api.candlesticks(value.symbol, config.interval()[0], null, {
-                startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
-            }).then(res => {
-                if (this.histories[value.symbol] !== undefined) {
-                    for (let i = 0; i < res.length; i++) {
-                        i === 0 ? this.histories[value.symbol].pop() : this.histories[value.symbol].shift()
-                    }
+                        res.forEach(v => {
+                            this.histories[value.symbol].push(v)
+                        })
+                    } else this.histories[value.symbol] = res
 
-                    res.forEach(v => {
-                        this.histories[value.symbol].push(v)
-                    })
-                } else this.histories[value.symbol] = res
+                    if (++counter === this.exchangeInfo.length) resolve();
+                })
             })
-        }
+        })
     }
 
     getCurrenciesFilteredByHistories() {
@@ -259,8 +262,8 @@ class Bot {
     }
 }
 
-function start() {
-    new Promise(res => setTimeout(res, config.refresh())).then(() => main())
+function start(delay) {
+    new Promise(res => setTimeout(res, delay * 1000)).then(() => main())
 }
 
 async function main() {
@@ -316,8 +319,8 @@ async function main() {
     myBot.getConsole()
 
     /* Restart bot */
-    start()
+    start(20)
 }
 
 /* Start bot */
-start()
+start(20)
