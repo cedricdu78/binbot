@@ -104,7 +104,7 @@ class Bot {
     }
 
     async getHistories() {
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve,) => {
             let counter = 0
             this.exchangeInfo.forEach(value => {
                 let startDate = new Date()
