@@ -291,4 +291,4 @@ async function main() {
     start()
 }
 
-main()
+start()
