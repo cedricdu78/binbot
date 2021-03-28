@@ -36,7 +36,7 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
-    resume = {total: 0, available: 0, target: 0, bnb: 0, mise: 0}
+    resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0}
     nbMise = 0
     
     async getBalances() {
@@ -57,15 +57,17 @@ class Bot {
 
     getTotal() {
         this.resume.available = Number(this.balances.filter(([k,]) => k === config.baseMoney())[0][1].available)
-        this.resume.total = this.resume.available
         this.resume.bnb = Number((this.balances.filter(([k,]) => k === config.feeMoney())[0][1].available *
             this.bookTickers[config.feeMoney() + config.baseMoney()].ask).toFixed(2))
 
         this.balances.forEach(([k,v]) => {
-            if (this.bookTickers[k + config.baseMoney()] !== undefined)
-                this.resume.total += (Number(v.available) + Number(v.onOrder)) *
+            if (this.bookTickers[k + config.baseMoney()] !== undefined && k !== config.feeMoney()) {
+                this.resume.current += (Number(v.available) + Number(v.onOrder)) *
                     Number(this.bookTickers[k + config.baseMoney()].ask)
+            }
         })
+
+        this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
     }
 
     getMise() {
@@ -82,8 +84,8 @@ class Bot {
     getOrders() {
         this.openOrders.forEach(order => {
             let nowValue = Number((this.bookTickers[order.symbol].ask * order['origQty']).toFixed(2))
-            let openValue = Number((order.price / (config.profit() / 100 + 1) * order['origQty']).toFixed(2))
-            let wantValue = Number((order.price * order['origQty']).toFixed(2))
+            let openValue = Number((Number(order.price) / (config.profit() / 100 + 1) * order['origQty']).toFixed(2))
+            let wantValue = Number((Number(order.price) * order['origQty']).toFixed(2))
             this.orders.push(func.order(
                 order.symbol,
                 order['origQty'],
@@ -94,7 +96,7 @@ class Bot {
                 (nowValue / openValue * 100) - 100
             ))
 
-            this.resume.target += order.price
+            this.resume.target += Number(order.price * order['origQty'])
         })
     }
 
@@ -245,8 +247,9 @@ class Bot {
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number((this.resume.target - (this.resume.target * config.profit() / 100)).toFixed(2)),
-                Current: Number(this.resume.total.toFixed(2)),
-                Target: Number(this.resume.target.toFixed(2))
+                Current: Number(this.resume.current.toFixed(2)),
+                Target: Number(this.resume.target.toFixed(2)),
+                Total: Number(this.resume.total.toFixed(2))
             }
         })
     }
@@ -272,20 +275,20 @@ async function main() {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByOrders()
     myBot.getCurrenciesFilteredByUnordered()
-
-    await myBot.getHistories()
-
-    myBot.getCurrenciesFilteredByHistories()
-    myBot.getAveragesAndPrice()
-    myBot.getCurrenciesFilteredByConditions()
-    myBot.getPrecisions()
-
-    await myBot.getBuy()
-    await myBot.getSell()
+    //
+    // await myBot.getHistories()
+    //
+    // myBot.getCurrenciesFilteredByHistories()
+    // myBot.getAveragesAndPrice()
+    // myBot.getCurrenciesFilteredByConditions()
+    // myBot.getPrecisions()
+    //
+    // await myBot.getBuy()
+    // await myBot.getSell()
 
     myBot.getConsole()
 
     start()
 }
 
-start()
+main()
