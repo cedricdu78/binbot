@@ -144,6 +144,9 @@ class Bot {
             })
 
             value.price = this.histories[value.symbol][this.histories[value.symbol].length - 1][4]
+
+            value.am_price = Number((((value.price - (func.lAvg(value.moy) * (100 - config.median()[0]) / 100))
+                / (func.lAvg(value.moy) * (100 - config.median()[0]) / 100)) * 100).toFixed(2))
         })
     }
 
@@ -199,8 +202,7 @@ class Bot {
 
     async getBuy() {
         for (let i = 0; i < this.exchangeInfo.length; i++) {
-            let value = this.exchangeInfo[i]
-
+            let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
             if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
                 continue
 
@@ -310,4 +312,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
