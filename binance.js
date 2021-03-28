@@ -94,7 +94,7 @@ class Bot {
                 (nowValue / openValue * 100) - 100
             ))
 
-            this.resume.target += order.value
+            this.resume.target += order.price
         })
     }
 
