@@ -262,8 +262,8 @@ class Bot {
     }
 }
 
-function start(delay) {
-    new Promise(res => setTimeout(res, delay === undefined ? config.restartTime() : delay)).then(() => main())
+function start(delay = config.restartTime()) {
+    new Promise(res => setTimeout(res, delay)).then(() => main())
 }
 
 async function main() {
