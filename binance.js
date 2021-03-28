@@ -317,9 +317,9 @@ async function main() {
 
     /* Get console output */
     myBot.getConsole()
-    //
+
     /* Restart bot */
-    // start()
+    start()
 }
 
 /* Start bot */
