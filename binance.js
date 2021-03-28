@@ -144,7 +144,7 @@ class Bot {
                 value.moy.push(Number(val[4]))
             })
 
-            value.price = this.bookTickers[value.symbol].ask
+            value.price = this.histories[value.symbol][this.histories[value.symbol].length - 1][4]
         })
     }
 
@@ -263,7 +263,7 @@ class Bot {
 }
 
 function start(delay) {
-    new Promise(res => setTimeout(res, delay * 1000)).then(() => main())
+    new Promise(res => setTimeout(res, delay === null ? config.restartTime() : delay)).then(() => main())
 }
 
 async function main() {
@@ -279,6 +279,10 @@ async function main() {
     /* Get prices of currencies */
     await myBot.getBookTickers()
 
+    /* Get total value and others */
+    myBot.getTotal()
+    /* Get mises and nb mise */
+    myBot.getMise()
     /* Get cryptos on Balances without orders */
     myBot.getUnordered()
     /* Get orders in list */
@@ -295,14 +299,6 @@ async function main() {
 
     /* Remove currencies when no have full histories */
     myBot.getCurrenciesFilteredByHistories()
-
-    /* Get prices of currencies */
-    await myBot.getBookTickers()
-
-    /* Get total value and others */
-    myBot.getTotal()
-    /* Get mises and nb mise */
-    myBot.getMise()
     /* Get average and price for currencies */
     myBot.getAveragesAndPrice()
     /* Remove currencies not have full conditions */
@@ -319,8 +315,8 @@ async function main() {
     myBot.getConsole()
 
     /* Restart bot */
-    start(20)
+    start()
 }
 
 /* Start bot */
-start(20)
+start(0)

@@ -17,7 +17,7 @@ module.exports = {
     mise: function () { return 4 },
     profit: function () { return 10 },
     interval: function () { return ['15m', 900] },
-    median: function () { return [5, 30] },
+    median: function () { return [0, 30] },
     prc: function () { return 10 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
@@ -31,6 +31,8 @@ module.exports = {
 
     // colResume :  Column name in console output
     // colCrypto :  Column name in console output
+    // restartTime : Delay before restart bot
     colResume: function () { return ["Placed", "Current", "Target"] },
     colCrypto: function () { return ["Currencies", "Available", "Total", "Status", "Market", "bearish", "bullish"] },
+    restartTime: function() { return 20000 }
 }
