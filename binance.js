@@ -275,16 +275,16 @@ async function main() {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByOrders()
     myBot.getCurrenciesFilteredByUnordered()
-    //
-    // await myBot.getHistories()
-    //
-    // myBot.getCurrenciesFilteredByHistories()
-    // myBot.getAveragesAndPrice()
-    // myBot.getCurrenciesFilteredByConditions()
-    // myBot.getPrecisions()
-    //
-    // await myBot.getBuy()
-    // await myBot.getSell()
+
+    await myBot.getHistories()
+
+    myBot.getCurrenciesFilteredByHistories()
+    myBot.getAveragesAndPrice()
+    myBot.getCurrenciesFilteredByConditions()
+    myBot.getPrecisions()
+
+    await myBot.getBuy()
+    await myBot.getSell()
 
     myBot.getConsole()
 
