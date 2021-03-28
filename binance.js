@@ -55,26 +55,6 @@ class Bot {
         await this.api.bookTickers().then(bookTickers => this.bookTickers = bookTickers)
     }
 
-    getTotal() {
-        this.resume.available = Number(this.balances.filter(([k,]) => k === config.baseMoney())[0][1].available)
-        this.resume.bnb = Number((this.balances.filter(([k,]) => k === config.feeMoney())[0][1].available *
-            this.bookTickers[config.feeMoney() + config.baseMoney()].ask).toFixed(2))
-
-        this.balances.forEach(([k,v]) => {
-            if (this.bookTickers[k + config.baseMoney()] !== undefined && k !== config.feeMoney()) {
-                this.resume.current += (Number(v.available) + Number(v.onOrder)) *
-                    Number(this.bookTickers[k + config.baseMoney()].ask)
-            }
-        })
-
-        this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
-    }
-
-    getMise() {
-        this.resume.mise = this.resume.total * 4 / 100
-        this.nbMise = this.resume.available / (this.resume.mise + (this.resume.mise * config.feeValue() / 100))
-    }
-
     getUnordered() {
         this.unordered = this.balances.filter(([k,v]) => v.available > 0
             && k !== config.baseMoney()
@@ -161,8 +141,28 @@ class Bot {
                 value.moy.push(Number(val[4]))
             })
 
-            value.price = value.moy[value.moy.length - 1]
+            value.price = this.bookTickers[value.symbol].ask
         })
+    }
+
+    getTotal() {
+        this.resume.available = Number(this.balances.filter(([k,]) => k === config.baseMoney())[0][1].available)
+        this.resume.bnb = Number((this.balances.filter(([k,]) => k === config.feeMoney())[0][1].available *
+            this.bookTickers[config.feeMoney() + config.baseMoney()].ask).toFixed(2))
+
+        this.balances.forEach(([k,v]) => {
+            if (this.bookTickers[k + config.baseMoney()] !== undefined && k !== config.feeMoney()) {
+                this.resume.current += (Number(v.available) + Number(v.onOrder)) *
+                    Number(this.bookTickers[k + config.baseMoney()].ask)
+            }
+        })
+
+        this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
+    }
+
+    getMise() {
+        this.resume.mise = this.resume.total * 4 / 100
+        this.nbMise = this.resume.available / (this.resume.mise + (this.resume.mise * config.feeValue() / 100))
     }
 
     getCurrenciesFilteredByConditions() {
@@ -263,32 +263,57 @@ async function main() {
 
     const myBot = new Bot()
 
+    /* Get Balances */
     await myBot.getBalances()
+    /* Get orders exists */
     await myBot.getOpenOrders()
+    /* Get list of currencies */
     await myBot.getExchangeInfo()
+    /* Get prices of currencies */
     await myBot.getBookTickers()
 
-    myBot.getTotal()
-    myBot.getMise()
+    /* Get cryptos on Balances without orders */
     myBot.getUnordered()
+    /* Get orders in list */
     myBot.getOrders()
+    /* Remove currencies without baseMoney */
     myBot.getCurrenciesFilteredByBaseMoney()
+    /* Remove currencies ordered */
     myBot.getCurrenciesFilteredByOrders()
+    /* Remove currencies unordered */
     myBot.getCurrenciesFilteredByUnordered()
 
+    /* Get histories of currencies */
     await myBot.getHistories()
 
+    /* Remove currencies when no have full histories */
     myBot.getCurrenciesFilteredByHistories()
+
+    /* Get prices of currencies */
+    await myBot.getBookTickers()
+
+    /* Get total value and others */
+    myBot.getTotal()
+    /* Get mises and nb mise */
+    myBot.getMise()
+    /* Get average and price for currencies */
     myBot.getAveragesAndPrice()
+    /* Remove currencies not have full conditions */
     myBot.getCurrenciesFilteredByConditions()
+    /* Get precisions for prices and volumes */
     myBot.getPrecisions()
 
+    /* Buy currencies */
     await myBot.getBuy()
+    /* Sell currencies */
     await myBot.getSell()
 
+    /* Get console output */
     myBot.getConsole()
 
+    /* Restart bot */
     start()
 }
 
+/* Start bot */
 start()
