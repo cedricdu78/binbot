@@ -37,7 +37,6 @@ class Bot {
     orders = []
     newOrders = []
     resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0, number: 0}
-    nbMise = 0
 
     async getBalances() {
         await this.api.balance().then(balances => this.balances = Object.entries(balances))
@@ -165,17 +164,12 @@ class Bot {
 
     getMise() {
         this.resume.mise = this.resume.total * 4 / 100
-        this.nbMise = this.resume.available / (this.resume.mise + (this.resume.mise * config.feeValue() / 100))
     }
 
     getCurrenciesFilteredByConditions() {
         this.exchangeInfo = this.exchangeInfo.filter(value => func.lAvg(value.moy) * (100 - config.median()[1]) / 100 <= value.price
             && func.lAvg(value.moy) * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
             && ((((Math.max.apply(null, value.moy)) - func.lAvg(value.moy)) / func.lAvg(value.moy)) * 100) >= config.prc())
-
-        this.resume.number = this.exchangeInfo.length
-
-        this.exchangeInfo = this.exchangeInfo.filter(() => this.nbMise-- > 1)
     }
 
     getPrecisions() {
@@ -206,38 +200,37 @@ class Bot {
     async getBuy() {
         for (let i = 0; i < this.exchangeInfo.length; i++) {
             let value = this.exchangeInfo[i]
+
+            if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
+                continue
+
             await this.api.marketBuy(value.symbol, value.volume, (error,) => {
                 if (error !== null) {
                     let responseJson = JSON.parse(error.body)
-                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + value.price
+                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
                         + " " + value.volume)
                 } else {
-                    this.balances.filter(([k,]) => k === config.baseMoney())[0][1].available -= this.resume.mise
-                    this.balances.filter(([k,]) => k === config.feeMoney())[0][1].available -= value.price * config.feeValue() / 100
-                }
-            })
-        }
-    }
+                    this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
+                    this.resume.bnb -= Number(value.price) * config.feeValue() / 100
 
-    async getSell() {
-        for (let i = 0; i < this.exchangeInfo.length; i++) {
-            let value = this.exchangeInfo[i]
-            await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
-                if (error !== null) {
-                    let responseJson = JSON.parse(error.body)
-                    console.error(value.symbol + " [" + responseJson.code + "]: "
-                        + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
-                } else {
-                    this.newOrders.push(
-                        func.order(value.symbol,
-                            value.volume,
-                            value.sellPrice * value.volume,
-                            value.price,
-                            value.price,
-                            Date.now(),
-                            0
-                        )
-                    )
+                    this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
+                        if (error !== null) {
+                            let responseJson = JSON.parse(error.body)
+                            console.error(value.symbol + " [" + responseJson.code + "]: "
+                                + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
+                        } else {
+                            this.newOrders.push(
+                                func.order(value.symbol,
+                                    value.volume,
+                                    value.sellPrice * value.volume,
+                                    value.price,
+                                    value.price,
+                                    Date.now(),
+                                    0
+                                )
+                            )
+                        }
+                    })
                 }
             })
         }
@@ -250,7 +243,7 @@ class Bot {
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
-                Num: this.resume.number,
+                Num: this.exchangeInfo.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number((this.resume.target - (this.resume.target * config.profit() / 100)).toFixed(2)),
@@ -308,8 +301,6 @@ async function main() {
 
     /* Buy currencies */
     await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
