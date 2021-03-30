@@ -213,9 +213,7 @@ class Bot {
     async getBuy() {
         await new Promise(async (resolve,) => {
             for (let i = 0; i < this.exchangeInfo.length; i++) {
-
                 let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
-
                 if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100)) {
                     if (i === this.exchangeInfo.length - 1) { resolve(); continue }
                     else continue
@@ -223,11 +221,10 @@ class Bot {
 
                 await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
                     if (error !== null) {
-                        console.log(i)
                         let responseJson = JSON.parse(error.body)
                         console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
                             + " " + value.volume)
-                        if (i === this.exchangeInfo.length - 1) resolve();
+                        if (i === this.exchangeInfo.length - 1) resolve()
                     } else {
                         this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
                         this.resume.bnb -= Number(value.price) * config.feeValue() / 100
@@ -250,7 +247,7 @@ class Bot {
                                 )
                             }
 
-                            if (i === this.exchangeInfo.length - 1) resolve();
+                            if (i === this.exchangeInfo.length - 1) resolve()
                         })
                     }
                 })
@@ -332,4 +329,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
