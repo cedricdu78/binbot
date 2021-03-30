@@ -211,42 +211,54 @@ class Bot {
     }
 
     async getBuy() {
-        for (let i = 0; i < this.exchangeInfo.length; i++) {
-            let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
+        await new Promise((resolve,) => {
+            for (let i = 0; i < this.exchangeInfo.length; i++) {
+                let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
+                if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
+                    continue
 
-            if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
-                continue
+                this.api.marketBuy(value.symbol, value.volume, async (error,) => {
+                    if (error !== null) {
+                        let responseJson = JSON.parse(error.body)
+                        console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
+                            + " " + value.volume)
+                    } else {
+                        this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
+                        this.resume.bnb -= Number(value.price) * config.feeValue() / 100
+                    }
 
-            await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
-                if (error !== null) {
-                    let responseJson = JSON.parse(error.body)
-                    console.error(value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
-                        + " " + value.volume)
-                } else {
-                    this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
-                    this.resume.bnb -= Number(value.price) * config.feeValue() / 100
+                    if (i === this.exchangeInfo.length - 1) resolve();
+                })
+            }
+        })
+    }
 
-                    await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
-                        if (error !== null) {
-                            let responseJson = JSON.parse(error.body)
-                            console.error(value.symbol + " [" + responseJson.code + "]: "
-                                + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
-                        } else {
-                            this.newOrders.push(
-                                func.order(value.symbol,
-                                    value.volume,
-                                    Number(value.sellPrice) * Number(value.volume),
-                                    value.price,
-                                    value.price,
-                                    Date.now(),
-                                    0
-                                )
+    async getSell() {
+        await new Promise((resolve,) => {
+            for (let i = 0; i < this.exchangeInfo.length; i++) {
+                let value = this.exchangeInfo[i]
+                this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
+                    if (error !== null) {
+                        let responseJson = JSON.parse(error.body)
+                        console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
+                            + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
+                    } else {
+                        this.newOrders.push(
+                            func.order(value.symbol,
+                                value.volume,
+                                Number(value.sellPrice) * Number(value.volume),
+                                value.price,
+                                value.price,
+                                Date.now(),
+                                0
                             )
-                        }
-                    })
-                }
-            })
-        }
+                        )
+                    }
+
+                    if (i === this.exchangeInfo.length - 1) resolve();
+                })
+            }
+        })
     }
 
     getConsole() {
@@ -314,6 +326,9 @@ async function main() {
 
     /* Buy currencies */
     await myBot.getBuy()
+
+    /* Sell currencies */
+    await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
