@@ -214,8 +214,10 @@ class Bot {
         await new Promise(async (resolve,) => {
             for (let i = 0; i < this.exchangeInfo.length; i++) {
                 let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
-                if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
-                    continue
+                if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100)) {
+                    if (i === this.exchangeInfo.length - 1) resolve();
+                    else continue
+                }
 
                 await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
                     if (error !== null) {
@@ -337,4 +339,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
