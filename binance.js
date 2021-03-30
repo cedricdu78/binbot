@@ -211,13 +211,13 @@ class Bot {
     }
 
     async getBuy() {
-        await new Promise((resolve,) => {
+        await new Promise(async (resolve,) => {
             for (let i = 0; i < this.exchangeInfo.length; i++) {
                 let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
                 if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100))
                     continue
 
-                this.api.marketBuy(value.symbol, value.volume, async (error,) => {
+                await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
                     if (error !== null) {
                         let responseJson = JSON.parse(error.body)
                         console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
@@ -234,10 +234,10 @@ class Bot {
     }
 
     async getSell() {
-        await new Promise((resolve,) => {
+        await new Promise(async (resolve,) => {
             for (let i = 0; i < this.exchangeInfo.length; i++) {
                 let value = this.exchangeInfo[i]
-                this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
+                await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
                     if (error !== null) {
                         let responseJson = JSON.parse(error.body)
                         console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
@@ -326,7 +326,6 @@ async function main() {
 
     /* Buy currencies */
     await myBot.getBuy()
-
     /* Sell currencies */
     await myBot.getSell()
 
