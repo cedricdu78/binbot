@@ -187,9 +187,9 @@ class Bot {
             && value.avg * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
             && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc())
 
-        let nbMise = String(this.resume.mise / this.resume.available).split('.')[0]
+        let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
 
-        console.log(this.resume.mise / this.resume.available)
+        console.log(this.resume.available / this.resume.mise)
         console.log(nbMise)
 
         this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
