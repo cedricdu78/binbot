@@ -36,7 +36,7 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
-    resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0, number: 0}
+    resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
 
     async getBalances() {
         await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
@@ -187,7 +187,7 @@ class Bot {
             && value.avg * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
             && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc())
 
-        this.resume.number = this.exchangeInfo.length
+        this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
         this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
             .slice(0, nbMise <= 29 ? nbMise : 29)
@@ -270,12 +270,13 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
+        if (this.details.length > 0) console.table(this.details)
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.unordered.length > 0) console.table(this.unordered)
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
-                Num: this.resume.number,
+                Num: this.resume.details.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number((this.resume.target - (this.resume.target * config.profit() / 100)).toFixed(2)),
