@@ -136,32 +136,33 @@ class Bot {
     async getHistories() {
         await new Promise((resolve,) => {
             let counter = 0
-            this.exchangeInfo.forEach(value => {
-                let startDate = new Date()
-                let endDate = new Date()
-                startDate.setDate(startDate.getDate() - 7)
+            if (this.exchangeInfo.length > 0) {
+                this.exchangeInfo.forEach(value => {
+                    let startDate = new Date()
+                    let endDate = new Date()
+                    startDate.setDate(startDate.getDate() - 7)
 
-                if (this.histories[value.symbol] !== undefined)
-                    startDate = new Date(this.histories[value.symbol][this.histories[value.symbol].length - 1][0])
+                    if (this.histories[value.symbol] !== undefined)
+                        startDate = new Date(this.histories[value.symbol][this.histories[value.symbol].length - 1][0])
 
-                this.api.candlesticks(value.symbol, config.interval()[0], null, {
-                    startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
-                }).then(res => {
-                    if (this.histories[value.symbol] !== undefined) {
-                        for (let i = 0; i < res.length; i++) {
-                            i === 0 ? this.histories[value.symbol].pop() : this.histories[value.symbol].shift()
-                        }
+                    this.api.candlesticks(value.symbol, config.interval()[0], null, {
+                        startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
+                    }).then(res => {
+                        if (this.histories[value.symbol] !== undefined) {
+                            for (let i = 0; i < res.length; i++) {
+                                i === 0 ? this.histories[value.symbol].pop() : this.histories[value.symbol].shift()
+                            }
 
-                        res.forEach(v => {
-                            this.histories[value.symbol].push(v)
-                        })
-                    } else this.histories[value.symbol] = res
+                            res.forEach(v => {
+                                this.histories[value.symbol].push(v)
+                            })
+                        } else this.histories[value.symbol] = res
 
-                    if (++counter === this.exchangeInfo.length) resolve();
+                        if (++counter === this.exchangeInfo.length) resolve();
+                    })
                 })
-            })
-
-            resolve();
+            }
+            else resolve();
         })
     }
 
@@ -214,47 +215,50 @@ class Bot {
 
     async getBuy() {
         await new Promise(async (resolve,) => {
-            for (let i = 0; i < this.exchangeInfo.length; i++) {
-                let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
-                if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100)) {
-                    if (i === this.exchangeInfo.length - 1) { resolve(); continue }
-                    else continue
-                }
-                await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
-                    if (error !== null) {
-                        let responseJson = JSON.parse(error.body)
-                        console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
-                            + " " + value.volume)
-                        if (i === this.exchangeInfo.length - 1) resolve()
-                    } else {
-                        this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
-                        this.resume.bnb -= Number(value.price) * config.feeValue() / 100
 
-                        await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
-                            if (error !== null) {
-                                let responseJson = JSON.parse(error.body)
-                                console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
-                                    + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
-                            } else {
-                                this.newOrders.push(
-                                    func.order(value.symbol,
-                                        value.volume,
-                                        Number(value.sellPrice) * Number(value.volume),
-                                        value.price,
-                                        value.price,
-                                        Date.now(),
-                                        0
-                                    )
-                                )
-                            }
-
-                            if (i === this.exchangeInfo.length - 1) resolve()
-                        })
+            if (this.exchangeInfo.length > 0) {
+                for (let i = 0; i < this.exchangeInfo.length; i++) {
+                    let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
+                    if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100)) {
+                        if (i === this.exchangeInfo.length - 1) {
+                            resolve();
+                            continue
+                        } else continue
                     }
-                })
-            }
+                    await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
+                        if (error !== null) {
+                            let responseJson = JSON.parse(error.body)
+                            console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
+                                + " " + value.volume)
+                            if (i === this.exchangeInfo.length - 1) resolve()
+                        } else {
+                            this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
+                            this.resume.bnb -= Number(value.price) * config.feeValue() / 100
 
-            resolve()
+                            await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
+                                if (error !== null) {
+                                    let responseJson = JSON.parse(error.body)
+                                    console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
+                                        + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
+                                } else {
+                                    this.newOrders.push(
+                                        func.order(value.symbol,
+                                            value.volume,
+                                            Number(value.sellPrice) * Number(value.volume),
+                                            value.price,
+                                            value.price,
+                                            Date.now(),
+                                            0
+                                        )
+                                    )
+                                }
+
+                                if (i === this.exchangeInfo.length - 1) resolve()
+                            })
+                        }
+                    })
+                }
+            } else resolve()
         })
     }
 
