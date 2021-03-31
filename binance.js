@@ -183,12 +183,14 @@ class Bot {
     }
 
     getCurrenciesFilteredByConditions() {
-        let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
-        this.resume.number = this.exchangeInfo.length
         this.exchangeInfo = this.exchangeInfo.filter(value => value.avg * (100 - config.median()[1]) / 100 <= value.price
             && value.avg * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
             && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc())
-            .sort((a, b) => a.am_price - b.am_price).slice(0, nbMise <= 29 ? nbMise : 29)
+
+        this.resume.number = this.exchangeInfo.length
+        let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
+        this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
+            .slice(0, nbMise <= 29 ? nbMise : 29)
     }
 
     getPrecisions() {
