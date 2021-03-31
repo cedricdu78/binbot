@@ -160,6 +160,8 @@ class Bot {
                     if (++counter === this.exchangeInfo.length) resolve();
                 })
             })
+
+            resolve();
         })
     }
 
@@ -213,52 +215,27 @@ class Bot {
     async getBuy() {
         await new Promise(async (resolve,) => {
             for (let i = 0; i < this.exchangeInfo.length; i++) {
-                console.log("1")
                 let value = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)[i]
-                console.log("2")
                 if (this.resume.available < Number(value.price) + (Number(value.price) * config.feeValue() / 100)) {
-                    console.log("3")
-                    if (i === this.exchangeInfo.length - 1) {
-                        console.log("4")
-                        resolve();
-                        console.log("5")
-                        continue
-                    }
-                    else {
-                        console.log("6")
-                        continue
-                    }
+                    if (i === this.exchangeInfo.length - 1) { resolve(); continue }
+                    else continue
                 }
-                console.log("7")
-
                 await this.api.marketBuy(value.symbol, value.volume, async (error,) => {
-                    console.log("8")
                     if (error !== null) {
-                        console.log("9")
                         let responseJson = JSON.parse(error.body)
                         console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: " + responseJson["msg"] + " " + Number(value.price)
                             + " " + value.volume)
-                        if (i === this.exchangeInfo.length - 1) {
-                            console.log("10")
-                            resolve()
-                            console.log("11")
-                        }
-                        console.log("13")
+                        if (i === this.exchangeInfo.length - 1) resolve()
                     } else {
-                        console.log("14")
                         this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
                         this.resume.bnb -= Number(value.price) * config.feeValue() / 100
-                        console.log("15")
 
                         await this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
-                            console.log("16")
                             if (error !== null) {
-                                console.log("17")
                                 let responseJson = JSON.parse(error.body)
                                 console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
                                     + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
                             } else {
-                                console.log("18")
                                 this.newOrders.push(
                                     func.order(value.symbol,
                                         value.volume,
@@ -269,26 +246,15 @@ class Bot {
                                         0
                                     )
                                 )
-                                console.log("19")
                             }
-                            console.log("20")
 
-                            if (i === this.exchangeInfo.length - 1) {
-                                console.log("21")
-                                resolve()
-                                console.log("22")
-                            }
-                            console.log("23")
+                            if (i === this.exchangeInfo.length - 1) resolve()
                         })
-                        console.log("24")
                     }
-                    console.log("25")
                 })
-                console.log("26")
             }
-            console.log("27")
+
             resolve()
-            console.log("28")
         })
     }
 
