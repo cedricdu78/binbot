@@ -56,11 +56,9 @@ class Bot {
 
         this.balances.forEach(v => {
             if (this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
-                && v.symbol !== config.feeMoney()) {
-
+                && v.symbol !== config.feeMoney())
                 this.resume.current += this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
                     * (v.available + v.onOrder)
-            }
         })
 
         this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
@@ -74,6 +72,14 @@ class Bot {
         this.unordered = this.balances.filter(v => v.available > 0
             && v.symbol !== config.baseMoney()
             && v.symbol !== config.feeMoney())
+
+        this.unordered.forEach(v => {
+            if (this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
+                && v.symbol !== config.feeMoney())
+                v.price = Number((this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
+                    * (v.available + v.onOrder)).toFixed(2))
+            else v.price = NaN
+        })
     }
 
     getOrders() {
@@ -323,9 +329,9 @@ async function main() {
     myBot.getPrecisions()
 
     /* Buy currencies */
-    await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+    // await myBot.getBuy()
+    // /* Sell currencies */
+    // await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
@@ -335,4 +341,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
