@@ -265,6 +265,10 @@ class Bot {
                             )
                         }
 
+                        this.resume.placed += Number(value.price)
+                        this.resume.current += Number(value.price)
+                        this.resume.target += Number(value.sellPrice) * Number(value.volume)
+
                         if (this.exchangeInfo.indexOf(value) === this.exchangeInfo.length - 1)
                             resolve()
                     })
