@@ -36,7 +36,7 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
-    resume = {total: 0, available: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
+    resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
 
     async getBalances() {
         await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
@@ -97,6 +97,10 @@ class Bot {
             let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
+
+
+
+
             this.orders.push(func.order(
                 order.symbol,
                 order.volume,
@@ -107,6 +111,7 @@ class Bot {
                 (nowValue / openValue * 100) - 100
             ))
 
+            this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
             this.resume.target += order.price * order.volume
         })
     }
@@ -279,7 +284,7 @@ class Bot {
                 Num: this.resume.details.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
-                Placed: Number((this.resume.target - (this.resume.target * config.profit() / 100)).toFixed(2)),
+                Placed: Number(this.resume.placed.toFixed(2)),
                 Current: Number(this.resume.current.toFixed(2)),
                 Target: Number(this.resume.target.toFixed(2)),
                 Total: Number(this.resume.total.toFixed(2))
