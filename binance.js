@@ -4,22 +4,6 @@ const func = require('./lib/func');
 
 const Binance = require('node-binance-api');
 
-/*
-┌────────────┬───────────┬───────┬────┬──────────────────┐
-│  (index)   │ Available │ Total │ %  │      Status      │
-├────────────┼───────────┼───────┼────┼──────────────────┤
-│ Currencies │    39     │  209  │ 19 │ 'Market bullish' │
-└────────────┴───────────┴───────┴────┴──────────────────┘
-┌────────────┬─────────┬─────────┬─────────┐
-│  (index)   │ Placed  │ Current │ Target  │
-├────────────┼─────────┼─────────┼─────────┤
-│ Trades ($) │ 5908.33 │ 4890.15 │ 6499.17 │
-│  USDT ($)  │ 177.23  │ 177.23  │ 177.23  │
-│  BNB ($)   │  21.86  │  21.86  │  21.86  │
-│ Total ($)  │ 6107.42 │ 5089.23 │ 6698.26 │
-└────────────┴─────────┴─────────┴─────────┘
- */
-
 class Bot {
 
     api = new Binance().options({
@@ -40,7 +24,7 @@ class Bot {
 
     async getBalances() {
         await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
-            this.balances.push({symbol: k, available: Number(v.available), onOrder: Number(v.onOrder)})
+            this.balances.push({symbol: k, available: Number(v.available) - config.keep_balance(), onOrder: Number(v.onOrder)})
         }))
     }
 
@@ -97,9 +81,6 @@ class Bot {
             let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
-
-
-
 
             this.orders.push(func.order(
                 order.symbol,
@@ -343,6 +324,7 @@ async function main() {
 
     /* Buy currencies */
     await myBot.getBuy()
+    /* Sell currencies */
     await myBot.getSell()
 
     /* Get console output */
