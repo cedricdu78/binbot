@@ -233,7 +233,7 @@ async function main(myBot) {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
-    // await myBot.getBuy()
+    await myBot.getBuy()
 
     myBot.getConsole()
 
