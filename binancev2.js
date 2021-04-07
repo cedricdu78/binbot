@@ -131,6 +131,7 @@ class Bot {
     }
 
     async getBuy() {
+        this.new_orders = []
         if (this.currencies.length > 0) {
             await new Promise((resolve,) => {
                 console.log()
@@ -198,7 +199,7 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders)
-        if (this.new_orders.length > 0) console.table(this.orders)
+        if (this.new_orders.length > 0) console.table(this.new_orders)
         if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
             console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
 
