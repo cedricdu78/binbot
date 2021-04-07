@@ -240,4 +240,4 @@ async function main(myBot) {
     start(5000)
 }
 
-start(0)
+start()
