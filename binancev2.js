@@ -19,6 +19,7 @@ class Bot {
     histories = []
     currencies = []
     orders = []
+    new_orders = []
     mise = 0
 
     available = 0
@@ -35,6 +36,7 @@ class Bot {
     }
 
     async getOpenOrders() {
+        this.openOrders = []
         await this.api.openOrders().then(openOrders => openOrders.forEach(v => {
             this.openOrders.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
         }))
@@ -64,6 +66,27 @@ class Bot {
         this.total += this.available
 
         this.mise = this.total * 10 / 100
+    }
+
+    getOrders() {
+        this.openOrders.forEach(order => {
+            let openValue = (order.price / (1 / 100 + 1) * order.volume).toFixed(2)
+            let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
+            let wantValue = (order.price * order.volume).toFixed(2)
+
+            this.orders.push(func.order(
+                order.symbol,
+                order.volume,
+                wantValue,
+                openValue,
+                nowValue,
+                order.time,
+                (nowValue / openValue * 100) - 100
+            ))
+
+            // this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
+            // this.resume.target += order.price * order.volume
+        })
     }
 
     getCurrenciesFilteredByBaseMoney() {
@@ -152,7 +175,7 @@ class Bot {
                                     console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
                                         + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
                                 } else {
-                                    this.orders.push((func.order(value.symbol,
+                                    this.new_orders.push((func.order(value.symbol,
                                             value.volume,
                                             Number(value.sellPrice) * Number(value.volume),
                                             value.price,
@@ -175,7 +198,10 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders)
-        console.table(this.balances.filter(v => v.price > 1), ["symbol", "price"])
+        if (this.new_orders.length > 0) console.table(this.orders)
+        if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
+            console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
+
         console.table({
             status: {
                 BNB: Number((this.bnb).toFixed(2)),
@@ -203,10 +229,11 @@ async function main(myBot) {
     await myBot.getBookTickers()
     await myBot.getBalances()
 
+    myBot.getOrders()
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
-    await myBot.getBuy()
+    // await myBot.getBuy()
 
     myBot.getConsole()
 
