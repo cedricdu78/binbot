@@ -38,12 +38,12 @@ class Bot {
     async getOpenOrders() {
         this.openOrders = []
         await this.api.openOrders().then(openOrders => openOrders.forEach(v => {
-            this.openOrders.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
+            this.openOrders.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
+            orderId: v.orderId})
         }))
     }
 
     async getBookTickers() {
-        this.orders = []
         this.bookTickers = []
         await this.api.bookTickers().then(bookTickers => Object.entries(bookTickers).forEach(([k,v]) => {
             this.bookTickers.push({symbol: k, price: Number(v.ask)})
@@ -81,7 +81,8 @@ class Bot {
                 openValue,
                 nowValue,
                 order.time,
-                (nowValue / openValue * 100) - 100
+                (nowValue / openValue * 100) - 100,
+                order.orderId
             ))
 
             // this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
@@ -130,6 +131,45 @@ class Bot {
         this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
     }
 
+    async checkOrders() {
+        if (this.orders.length > 0) {
+            await new Promise((resolve,) => {
+
+                this.orders.forEach(order => {
+
+                    if (order.plusValue <= -5) {
+
+                        this.api.cancel(order.currency, order.orderId, (error,) => {
+                            if (error !== null) {
+                                let responseJson = JSON.parse(error.body)
+                                console.error("Cancel: " + order.currency + " [" + responseJson.code + "]: "
+                                    + responseJson["msg"])
+
+                                if (this.orders.indexOf(order) === this.orders.length - 1)
+                                    resolve()
+                            } else {
+                                this.api.marketSell(order.currency, order.volume, {type: 'MARKET'}, (error,) => {
+                                    if (error !== null) {
+                                        let responseJson = JSON.parse(error.body)
+                                        console.error("Buy: " + order.currency + " [" + responseJson.code + "]: "
+                                            + responseJson["msg"])
+                                    } else {
+                                        console.log("Sell: " + order.currency + " " + order.plusValue)
+                                    }
+
+                                    if (this.orders.indexOf(order) === this.orders.length - 1)
+                                        resolve()
+                                })
+                            }
+                        })
+                    } else if (this.orders.indexOf(order) === this.orders.length - 1) {
+                        resolve()
+                    }
+                })
+            })
+        }
+    }
+
     async getBuy() {
         this.new_orders = []
         if (this.currencies.length > 0) {
@@ -167,7 +207,7 @@ class Bot {
                             if (this.currencies.indexOf(value) === this.currencies.length - 1)
                                 resolve()
                         } else {
-                            this.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
+                            this.available -= Number(value.price)
                             this.bnb -= Number(value.price) * config.feeValue() / 100
 
                             this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
@@ -176,15 +216,14 @@ class Bot {
                                     console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
                                         + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
                                 } else {
-                                    this.new_orders.push((func.order(value.symbol,
+                                    this.new_orders.push(func.order(value.symbol,
                                             value.volume,
                                             Number(value.sellPrice) * Number(value.volume),
                                             value.price,
                                             value.price,
-                                            Date.now(),
-                                            0
+                                            Date.now()
                                         )
-                                    ))
+                                    )
                                 }
 
                                 if (this.currencies.indexOf(value) === this.currencies.length - 1)
@@ -234,6 +273,7 @@ async function main(myBot) {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
+    await myBot.checkOrders()
     await myBot.getBuy()
 
     myBot.getConsole()
