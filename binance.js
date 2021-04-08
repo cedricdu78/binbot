@@ -177,7 +177,15 @@ class Bot {
     getCurrenciesFilteredByConditions() {
         this.exchangeInfo = this.exchangeInfo.filter(value => value.avg * (100 - config.median()[1]) / 100 <= value.price
             && value.avg * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
-            && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc())
+            && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc()
+            && this.histories[value.symbol][this.histories[value.symbol].length - 1][4]
+            > this.histories[value.symbol][this.histories[value.symbol].length - 2][4]
+            && this.histories[value.symbol][this.histories[value.symbol].length - 2][4]
+            > this.histories[value.symbol][this.histories[value.symbol].length - 3][4]
+            && this.histories[value.symbol][this.histories[value.symbol].length - 3][4]
+            > this.histories[value.symbol][this.histories[value.symbol].length - 4][4]
+            && this.histories[value.symbol][this.histories[value.symbol].length - 4][4]
+            > this.histories[value.symbol][this.histories[value.symbol].length - 5][4])
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
@@ -341,4 +349,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
