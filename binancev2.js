@@ -69,6 +69,7 @@ class Bot {
     }
 
     getOrders() {
+        this.orders = []
         this.openOrders.forEach(order => {
             let openValue = (order.price / (1 / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
