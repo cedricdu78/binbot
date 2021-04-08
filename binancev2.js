@@ -121,7 +121,7 @@ class Bot {
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
+            < Number(this.histories[k.symbol][4]) && (k.prc >= 2)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         let nbMise = String(this.available / this.mise).split('.')[0]
@@ -173,7 +173,7 @@ class Bot {
 
     async getBuy() {
         this.new_orders = []
-        if (this.currencies.length > 0) {
+        if (this.currencies.length > 0 && this.total > 3000) {
             await new Promise((resolve,) => {
                 console.log()
                 this.currencies.forEach(value => {
