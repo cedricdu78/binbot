@@ -181,9 +181,7 @@ class Bot {
             && this.histories[value.symbol][this.histories[value.symbol].length - 1][4]
             > this.histories[value.symbol][this.histories[value.symbol].length - 2][4]
             && this.histories[value.symbol][this.histories[value.symbol].length - 2][4]
-            > this.histories[value.symbol][this.histories[value.symbol].length - 3][4]
-            && this.histories[value.symbol][this.histories[value.symbol].length - 3][4]
-            > this.histories[value.symbol][this.histories[value.symbol].length - 4][4])
+            > this.histories[value.symbol][this.histories[value.symbol].length - 3][4])
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
