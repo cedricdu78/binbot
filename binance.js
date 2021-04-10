@@ -132,25 +132,12 @@ class Bot {
             let counter = 0
             this.exchangeInfo.forEach(function(v) {
                 let startDate = new Date()
-                let endDate = new Date()
                 startDate.setDate(startDate.getDate() - 7)
 
-                if (this.histories[v.symbol] !== undefined)
-                    startDate = new Date(this.histories[v.symbol][this.histories[v.symbol].length - 1][0])
-
                 this.api.candles({ symbol: v.symbol, interval: config.interval()[0],
-                    startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
+                    startTime: startDate.getTime(), endTime: new Date().getTime(), limit: config.interval()[1]
                 }).then(res => {
-                    if (this.histories[v.symbol] !== undefined) {
-                        for (let i = 0; i < res.length; i++) {
-                            i === 0 ? this.histories[v.symbol].pop() : this.histories[v.symbol].shift()
-                        }
-
-                        res.forEach(function(v) {
-                            this[v.symbol].push(v)
-                        }, this.histories)
-                    } else this.histories[v.symbol] = res
-
+                    this.histories[v.symbol] = res
                     if (++counter === this.exchangeInfo.length) resolve();
                 })
             }, this)
@@ -348,4 +335,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
