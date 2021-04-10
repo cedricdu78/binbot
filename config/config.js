@@ -1,9 +1,6 @@
 module.exports = {
 
     // keep_balance :   How much we keep the money.
-    // noOrder :        Returns cryptos that have no order and whose value is greater than or equal to 1
-    // marketPrc :      The market is bearish when the percentage of buyable crypto is greater than 20%
-    // onlyShort :      The bot only buys when the market is detected as bearish
     keep_balance: function () { return 0 },
 
     // mise :       The stake is 4% of your total balance (example for $4000 spot balance, stake of $160)
@@ -12,24 +9,18 @@ module.exports = {
     // median :     Purchase of a crypto if price between -0% and -20% of the average calculated over a week
     // prc :        Percentage difference between the average and the maximum over the week
     mise: function () { return 4 },
-    profit: function () { return 10 },
+    profit: function () { return 1 },
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
-    // baseSymbol   : Currency symbol used
     // feeMoney     : Use BNB for payment fee trading because -25%
     // feeValue     : Fee value with BNB is 0.750 but for security 0.15
     baseMoney: function () { return "USDT" },
-    baseSymbol: function () { return "$" },
     feeMoney: function () { return "BNB" },
     feeValue: function() { return 0.15 },
 
-    // colResume :  Column name in console output
-    // colCrypto :  Column name in console output
     // restartTime : Delay before restart bot
-    colResume: function () { return ["Placed", "Current", "Target"] },
-    colCrypto: function () { return ["Currencies", "Available", "Total", "Status", "Market", "bearish", "bullish"] },
     restartTime: function() { return 20000 }
 }

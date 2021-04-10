@@ -1,5 +1,7 @@
 {
-  "dependencies": {
-    "node-binance-api": "^0.12.5"
+  "name": "binbot",
+  "version": "1.0.0",
+  "devDependencies": {
+    "binance-api-node": "^0.10.37"
   }
 }
