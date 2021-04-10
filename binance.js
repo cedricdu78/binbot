@@ -260,7 +260,7 @@ class Bot {
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.available > 0
             && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()).length > 0) console.table(this.balances.filter(v => v.available > 0
+            && v.symbol !== config.feeMoney()).length > 0) console.table(this.balances.filter(v => v.available > 1
             && v.symbol !== config.baseMoney()
             && v.symbol !== config.feeMoney()))
         console.table({
