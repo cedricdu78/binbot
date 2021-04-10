@@ -16,7 +16,6 @@ class Bot {
     exchangeInfo = []
     bookTickers = []
 
-    unordered = []
     histories = []
     orders = []
     newOrders = []
@@ -70,11 +69,9 @@ class Bot {
     }
 
     getUnordered() {
-        this.unordered = this.balances.filter(v => v.available > 0
+        this.balances.filter(v => v.available > 0
             && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney())
-
-        this.unordered.forEach(v => {
+            && v.symbol !== config.feeMoney()).forEach(v => {
             if (this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
                 && v.symbol !== config.feeMoney())
                 v.price = Number((this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
@@ -86,7 +83,8 @@ class Bot {
     getOrders() {
         this.openOrders.forEach(order => {
             let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
-            let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
+            let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
+                .toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
 
             this.orders.push(func.order(
@@ -119,11 +117,14 @@ class Bot {
             this.balances.find(v => v.onOrder > 0 && v.symbol + config.baseMoney() === k.symbol) === undefined
         )
 
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.openOrders.find(v => v.symbol === k.symbol) === undefined)
+        this.exchangeInfo = this.exchangeInfo.filter(k => this.openOrders.find(v => v.symbol === k.symbol)
+            === undefined)
     }
 
     getCurrenciesFilteredByUnordered() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.unordered.find(v =>
+        this.exchangeInfo = this.exchangeInfo.filter(k => this.balances.filter(v => v.available > 0
+            && v.symbol !== config.baseMoney()
+            && v.symbol !== config.feeMoney()).find(v =>
             k.symbol === v.symbol + config.baseMoney()) === undefined)
     }
 
@@ -162,27 +163,27 @@ class Bot {
     }
 
     getAveragesAndPrice() {
-        this.exchangeInfo.forEach(value => {
-            value.lAvg = []
+        this.exchangeInfo.forEach(v => {
+            v.lAvg = []
 
-            this.histories[value.symbol].forEach(function (val) {
-                value.lAvg.push(Number(val.close))
+            this.histories[v.symbol].forEach(function (val) {
+                v.lAvg.push(Number(val.close))
             })
-            value.avg = func.lAvg(value.lAvg)
+            v.avg = func.lAvg(v.lAvg)
 
-            value.price = this.histories[value.symbol][this.histories[value.symbol].length - 1].close
+            v.price = this.histories[v.symbol][this.histories[v.symbol].length - 1].close
 
-            value.am_price = ((value.price - (value.avg * (100 - config.median()[0]) / 100))
-                / (value.avg * (100 - config.median()[0]) / 100)) * 100
+            v.am_price = ((v.price - (v.avg * (100 - config.median()[0]) / 100))
+                / (v.avg * (100 - config.median()[0]) / 100)) * 100
         })
     }
 
     getCurrenciesFilteredByConditions() {
-        this.exchangeInfo = this.exchangeInfo.filter(value => value.avg * (100 - config.median()[1]) / 100 <= value.price
-            && value.avg * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
-            && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc()
-            && this.histories[value.symbol][this.histories[value.symbol].length - 1].close
-            > this.histories[value.symbol][this.histories[value.symbol].length - 2].close)
+        this.exchangeInfo = this.exchangeInfo.filter(v => v.avg * (100 - config.median()[1]) / 100 <= v.price
+            && v.avg * (100 - config.median()[0]) / 100 >= v.price && v.price > 0
+            && ((((Math.max.apply(null, v.lAvg)) - v.avg) / v.avg) * 100) >= config.prc()
+            && this.histories[v.symbol][this.histories[v.symbol].length - 1].close
+            > this.histories[v.symbol][this.histories[v.symbol].length - 2].close)
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
@@ -191,45 +192,41 @@ class Bot {
     }
 
     getPrecisions() {
-        this.exchangeInfo.forEach(value => {
-            value.lenPrice = value.minPrice.split('.')[0] === "0"
-                ? (value.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+        this.exchangeInfo.forEach(v => {
+            v.lenPrice = v.minPrice.split('.')[0] === "0"
+                ? (v.minPrice.split('.')[1].split('1')[0] + '1').length : 0
 
-            value.lenVol = value.minQty.split('.')[0] === "0"
-                ? (value.minQty.split('.')[1].split('1')[0] + '1').length : 0
+            v.lenVol = v.minQty.split('.')[0] === "0"
+                ? (v.minQty.split('.')[1].split('1')[0] + '1').length : 0
 
-            value.volume = String((this.resume.mise / value.price))
-            value.volume = value.volume.substr(0, value.volume.split('.')[0].length
-                + (value.lenVol ? 1 : 0) + value.lenVol)
+            v.volume = String((this.resume.mise / v.price))
+            v.volume = v.volume.substr(0, v.volume.split('.')[0].length
+                + (v.lenVol ? 1 : 0) + v.lenVol)
 
-            value.sellPrice = String(value.price * (config.profit() / 100 + 1))
-            value.sellPrice = value.sellPrice.substr(0, value.sellPrice.split('.')[0].length
-                + (value.lenPrice ? 1 : 0) + value.lenPrice)
+            v.sellPrice = String(v.price * (config.profit() / 100 + 1))
+            v.sellPrice = v.sellPrice.substr(0, v.sellPrice.split('.')[0].length
+                + (v.lenPrice ? 1 : 0) + v.lenPrice)
 
-            value.price = String(value.price * Number(value.volume))
-            value.price = value.price.substr(0, value.price.split('.')[0].length
-                + (value.lenPrice ? 1 : 0) + value.lenPrice)
+            v.price = String(v.price * Number(v.volume))
+            v.price = v.price.substr(0, v.price.split('.')[0].length
+                + (v.lenPrice ? 1 : 0) + v.lenPrice)
         })
     }
 
     async getBuy() {
         if (this.exchangeInfo.length > 0) {
             await new Promise((resolve,) => {
-                this.exchangeInfo.forEach(value => {
-                    this.api.order({
-                        symbol: value.symbol,
-                        side: 'BUY',
-                        quantity: value.volume,
-                        type: 'MARKET'
+                this.exchangeInfo.forEach(v => {
+                    this.api.order({symbol: v.symbol, side: 'BUY', quantity: v.volume, type: 'MARKET'
                     }).then(function() {
-                        this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
-                        this.resume.bnb -= Number(value.price) * config.feeValue() / 100
+                        this.resume.available -= Number(v.price) + (Number(v.price) * config.feeValue() / 100)
+                        this.resume.bnb -= Number(v.price) * config.feeValue() / 100
 
-                        if (this.exchangeInfo.indexOf(value) === this.exchangeInfo.length - 1)
+                        if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
                     }, this).catch(function(e) {
                         console.error(e)
-                        if (this.indexOf(value) === this.length - 1)
+                        if (this.indexOf(v) === this.length - 1)
                             resolve()
                     }, this.exchangeInfo)
                 })
@@ -240,34 +237,30 @@ class Bot {
     async getSell() {
         if (this.exchangeInfo.length > 0) {
             await new Promise((resolve,) => {
-                this.exchangeInfo.forEach(value => {
-                    this.api.order({
-                        symbol: value.symbol,
-                        side: 'SELL',
-                        quantity: value.volume,
-                        price: value.sellPrice,
+                this.exchangeInfo.forEach(v => {
+                    this.api.order({ symbol: v.symbol, side: 'SELL', quantity: v.volume, price: v.sellPrice,
                         type: 'LIMIT'
                     }).then(() => {
                         this.newOrders.push(
-                            func.order(value.symbol,
-                                value.volume,
-                                Number(value.sellPrice) * Number(value.volume),
-                                value.price,
-                                value.price,
+                            func.order(v.symbol,
+                                v.volume,
+                                Number(v.sellPrice) * Number(v.volume),
+                                v.price,
+                                v.price,
                                 Date.now(),
                                 0
                             )
                         )
 
-                        this.resume.placed += Number(value.price)
-                        this.resume.current += Number(value.price)
-                        this.resume.target += Number(value.sellPrice) * Number(value.volume)
+                        this.resume.placed += Number(v.price)
+                        this.resume.current += Number(v.price)
+                        this.resume.target += Number(v.sellPrice) * Number(v.volume)
 
-                        if (this.exchangeInfo.indexOf(value) === this.exchangeInfo.length - 1)
+                        if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
                     }).catch(e => {
                         console.error(e)
-                        if (this.exchangeInfo.indexOf(value) === this.exchangeInfo.length - 1)
+                        if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
                     })
                 })
@@ -279,7 +272,11 @@ class Bot {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
         if (this.exchangeInfo.length > 0) console.table(this.resume.details, ["symbol", "am_price"])
         if (this.newOrders.length > 0) console.table(this.newOrders)
-        if (this.unordered.length > 0) console.table(this.unordered)
+        if (this.balances.filter(v => v.available > 0
+            && v.symbol !== config.baseMoney()
+            && v.symbol !== config.feeMoney()).length > 0) console.table(this.balances.filter(v => v.available > 0
+            && v.symbol !== config.baseMoney()
+            && v.symbol !== config.feeMoney()))
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
