@@ -42,8 +42,8 @@ class Bot {
     }
 
     async getBookTickers() {
-        Object.entries(await this.api.allBookTickers()).forEach(function([k,v]) {
-            this.push({symbol: k, price: Number(v.askPrice)})
+        Object.entries(await this.api.prices()).forEach(function([k,v]) {
+            this.push({symbol: k, price: Number(v)})
         }, this.bookTickers)
     }
 
@@ -297,6 +297,8 @@ function start(delay = config.restartTime()) {
 
 async function main() {
 
+    console.log(new Date().toLocaleString())
+
     const myBot = new Bot()
 
     /* Get Balances */
@@ -343,9 +345,11 @@ async function main() {
     /* Get console output */
     myBot.getConsole()
 
+    console.log(new Date().toLocaleString())
+
     /* Restart bot */
     start()
 }
 
 /* Start bot */
-start()
+start(0)
