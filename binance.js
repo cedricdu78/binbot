@@ -29,8 +29,7 @@ class Bot {
 
     async getOpenOrders() {
         (await this.api.openOrders()).forEach(function(v) {
-            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
-                orderId: v.orderId})
+            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
         }, this.openOrders)
     }
 
@@ -68,20 +67,20 @@ class Bot {
         this.resume.mise = this.resume.total * config.mise() / 100
     }
 
-    getUnordered() {
+    getPricesUnordered() {
         this.balances.filter(v => v.available > 0
             && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()).forEach(v => {
-            if (this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
+            && v.symbol !== config.feeMoney()).forEach(function(v) {
+            if (this.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
                 && v.symbol !== config.feeMoney())
-                v.price = Number((this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
+                v.price = Number((this.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
                     * (v.available + v.onOrder)).toFixed(2))
             else v.price = NaN
-        })
+        }, this.bookTickers)
     }
 
     getOrders() {
-        this.openOrders.forEach(order => {
+        this.openOrders.forEach(function(order) {
             let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
                 .toFixed(2)
@@ -100,7 +99,7 @@ class Bot {
 
             this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
             this.resume.target += order.price * order.volume
-        })
+        }, this)
     }
 
     getCurrenciesFilteredByBaseMoney() {
@@ -131,26 +130,26 @@ class Bot {
     async getHistories() {
         await new Promise((resolve,) => {
             let counter = 0
-            this.exchangeInfo.forEach(function(value) {
+            this.exchangeInfo.forEach(function(v) {
                 let startDate = new Date()
                 let endDate = new Date()
                 startDate.setDate(startDate.getDate() - 7)
 
-                if (this.histories[value.symbol] !== undefined)
-                    startDate = new Date(this.histories[value.symbol][this.histories[value.symbol].length - 1][0])
+                if (this.histories[v.symbol] !== undefined)
+                    startDate = new Date(this.histories[v.symbol][this.histories[v.symbol].length - 1][0])
 
-                this.api.candles({ symbol: value.symbol, interval: config.interval()[0],
+                this.api.candles({ symbol: v.symbol, interval: config.interval()[0],
                     startTime: startDate.getTime(), endTime: endDate.getTime(), limit: config.interval()[1]
                 }).then(res => {
-                    if (this.histories[value.symbol] !== undefined) {
+                    if (this.histories[v.symbol] !== undefined) {
                         for (let i = 0; i < res.length; i++) {
-                            i === 0 ? this.histories[value.symbol].pop() : this.histories[value.symbol].shift()
+                            i === 0 ? this.histories[v.symbol].pop() : this.histories[v.symbol].shift()
                         }
 
-                        res.forEach(v => {
-                            this.histories[value.symbol].push(v)
-                        })
-                    } else this.histories[value.symbol] = res
+                        res.forEach(function(v) {
+                            this[v.symbol].push(v)
+                        }, this.histories)
+                    } else this.histories[v.symbol] = res
 
                     if (++counter === this.exchangeInfo.length) resolve();
                 })
@@ -166,8 +165,8 @@ class Bot {
         this.exchangeInfo.forEach(v => {
             v.lAvg = []
 
-            this.histories[v.symbol].forEach(function (val) {
-                v.lAvg.push(Number(val.close))
+            this.histories[v.symbol].forEach(function (v2) {
+                v.lAvg.push(Number(v2.close))
             })
             v.avg = func.lAvg(v.lAvg)
 
@@ -314,7 +313,7 @@ async function main() {
     /* Get mises and nb mise */
     myBot.getMise()
     /* Get cryptos on Balances without orders */
-    myBot.getUnordered()
+    myBot.getPricesUnordered()
     /* Get orders in list */
     myBot.getOrders()
     /* Remove currencies without baseMoney */
