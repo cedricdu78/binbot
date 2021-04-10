@@ -204,17 +204,17 @@ class Bot {
             await new Promise((resolve,) => {
                 this.exchangeInfo.forEach(v => {
                     this.api.order({symbol: v.symbol, side: 'BUY', quantity: v.volume, type: 'MARKET'
-                    }).then(function() {
+                    }).then(() => {
                         this.resume.available -= Number(v.price) + (Number(v.price) * config.feeValue() / 100)
                         this.resume.bnb -= Number(v.price) * config.feeValue() / 100
 
                         if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
-                    }, this).catch(function(e) {
+                    }).catch(e => {
                         console.error(e)
-                        if (this.indexOf(v) === this.length - 1)
+                        if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
-                    }, this.exchangeInfo)
+                    })
                 })
             })
         }
