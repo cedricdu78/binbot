@@ -297,8 +297,6 @@ function start(delay = config.restartTime()) {
 
 async function main() {
 
-    console.log(new Date().toLocaleString())
-
     const myBot = new Bot()
 
     /* Get Balances */
@@ -345,11 +343,9 @@ async function main() {
     /* Get console output */
     myBot.getConsole()
 
-    console.log(new Date().toLocaleString())
-
     /* Restart bot */
     start()
 }
 
 /* Start bot */
-start(0)
+start()
