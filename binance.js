@@ -182,9 +182,7 @@ class Bot {
             && value.avg * (100 - config.median()[0]) / 100 >= value.price && value.price > 0
             && ((((Math.max.apply(null, value.lAvg)) - value.avg) / value.avg) * 100) >= config.prc()
             && this.histories[value.symbol][this.histories[value.symbol].length - 1].close
-            > this.histories[value.symbol][this.histories[value.symbol].length - 2].close
-            && this.histories[value.symbol][this.histories[value.symbol].length - 2].close
-            > this.histories[value.symbol][this.histories[value.symbol].length - 3].close)
+            > this.histories[value.symbol][this.histories[value.symbol].length - 2].close)
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
