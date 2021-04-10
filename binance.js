@@ -23,34 +23,30 @@ class Bot {
     resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
 
     async getBalances() {
-        let balances = await this.api.accountInfo()
-        balances['balances'].forEach(v => {
-            this.balances.push({symbol: v.asset, available: Number(v.free), onOrder: Number(v.locked)})
-        })
+        (await this.api.accountInfo())['balances'].forEach(function(v) {
+            this.push({symbol: v.asset, available: Number(v.free), onOrder: Number(v.locked)})
+        }, this.balances)
     }
 
     async getOpenOrders() {
-        let openOrders = await this.api.openOrders()
-        openOrders['forEach'](v => {
-            this.openOrders.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
+        (await this.api.openOrders()).forEach(function(v) {
+            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
                 orderId: v.orderId})
-        })
+        }, this.openOrders)
     }
 
     async getExchangeInfo() {
-        let exchangeInfo = await this.api.exchangeInfo()
-        exchangeInfo['symbols'].forEach(v => {
-            this.exchangeInfo.push({symbol: v.symbol, status: v.status, minPrice: v['filters'][0].minPrice,
+        (await this.api.exchangeInfo())['symbols'].forEach(function(v) {
+            this.push({symbol: v.symbol, status: v.status, minPrice: v['filters'][0].minPrice,
                 minQty: v['filters'][2].minQty
             })
-        })
+        }, this.exchangeInfo)
     }
 
     async getBookTickers() {
-        let bookTickers = await this.api.allBookTickers()
-        Object.entries(bookTickers).forEach(([k,v]) => {
-            this.bookTickers.push({symbol: k, price: Number(v.askPrice)})
-        })
+        Object.entries(await this.api.allBookTickers()).forEach(function([k,v]) {
+            this.push({symbol: k, price: Number(v.askPrice)})
+        }, this.bookTickers)
     }
 
     getTotal() {
@@ -59,12 +55,12 @@ class Bot {
         this.resume.bnb = this.balances.find(v => v.symbol === config.feeMoney()).available
             * this.bookTickers.find(v => v.symbol === config.feeMoney() + config.baseMoney()).price
 
-        this.balances.forEach(v => {
-            if (this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
+        this.balances.forEach(function(v) {
+            if (this[0].find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
                 && v.symbol !== config.feeMoney())
-                this.resume.current += this.bookTickers.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
+                this[1].current += this[0].find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
                     * (v.available + v.onOrder)
-        })
+        }, [this.bookTickers, this.resume])
 
         this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
     }
@@ -134,7 +130,7 @@ class Bot {
     async getHistories() {
         await new Promise((resolve,) => {
             let counter = 0
-            this.exchangeInfo.forEach(value => {
+            this.exchangeInfo.forEach(function(value) {
                 let startDate = new Date()
                 let endDate = new Date()
                 startDate.setDate(startDate.getDate() - 7)
@@ -157,7 +153,7 @@ class Bot {
 
                     if (++counter === this.exchangeInfo.length) resolve();
                 })
-            })
+            }, this)
         })
     }
 
@@ -227,17 +223,17 @@ class Bot {
                         side: 'BUY',
                         quantity: value.volume,
                         type: 'MARKET'
-                    }).then(() => {
+                    }).then(function() {
                         this.resume.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
                         this.resume.bnb -= Number(value.price) * config.feeValue() / 100
 
                         if (this.exchangeInfo.indexOf(value) === this.exchangeInfo.length - 1)
                             resolve()
-                    }).catch(e => {
+                    }, this).catch(function(e) {
                         console.error(e)
-                        if (this.exchangeInfo.indexOf(value) === this.exchangeInfo.length - 1)
+                        if (this.indexOf(value) === this.length - 1)
                             resolve()
-                    })
+                    }, this.exchangeInfo)
                 })
             })
         }
@@ -346,9 +342,9 @@ async function main() {
     myBot.getPrecisions()
 
     /* Buy currencies */
-    await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+    // await myBot.getBuy()
+    // /* Sell currencies */
+    // await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
@@ -358,4 +354,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
