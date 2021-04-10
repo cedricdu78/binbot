@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "devDependencies": {
     "binance-api-node": "^0.10.37"
+  },
+  "dependencies": {
+    "node-binance-api": "^0.12.5"
   }
 }
