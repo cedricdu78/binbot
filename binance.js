@@ -342,9 +342,9 @@ async function main() {
     myBot.getPrecisions()
 
     /* Buy currencies */
-    // await myBot.getBuy()
-    // /* Sell currencies */
-    // await myBot.getSell()
+    await myBot.getBuy()
+    /* Sell currencies */
+    await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
