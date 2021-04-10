@@ -121,7 +121,7 @@ class Bot {
     }
 
     getCurrenciesFilteredByUnordered() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.balances.filter(v => v.available > 0
+        this.exchangeInfo = this.exchangeInfo.filter(k => this.balances.filter(v => v.available > 1
             && v.symbol !== config.baseMoney()
             && v.symbol !== config.feeMoney()).find(v =>
             k.symbol === v.symbol + config.baseMoney()) === undefined)
@@ -335,4 +335,4 @@ async function main() {
 }
 
 /* Start bot */
-start(0)
+start()
