@@ -16,7 +16,7 @@ class Bot {
 
     async getBalances() {
         await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
-            this.balances.push({symbol: k, available: Number(v.available) - config.keep_balance(), onOrder: Number(v.onOrder)})
+            this.balances.push({symbol: k, available: Number(v.available), onOrder: Number(v.onOrder)})
         }))
     }
 
