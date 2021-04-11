@@ -135,18 +135,17 @@ class Bot {
             console.log(v.symbol + " " + v.prc)
         })
 
-        // let nbMise = String(this.available / this.mise).split('.')[0]
-        //
-        // this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, nbMise)
-        //
-        // this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
+        let nbMise = String(this.available / this.mise).split('.')[0]
+
+        this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, nbMise)
+
+        this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
     }
 
     async getBuy() {
         this.new_orders = []
         if (this.currencies.length > 0) {
             await new Promise((resolve,) => {
-                console.log()
                 this.currencies.forEach(value => {
 
                     value.price = Number(this.histories[value.symbol][this.histories[value.symbol].length - 1].price)
@@ -210,18 +209,18 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders)
-        // if (this.new_orders.length > 0) console.table(this.new_orders)
-        // if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
-        //     console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
+        if (this.new_orders.length > 0) console.table(this.new_orders)
+        if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
+            console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
 
-        // console.table({
-        //     status: {
-        //         BNB: Number((this.bnb).toFixed(2)),
-        //         USD: Number(this.available.toFixed(2)),
-        //         Mise: Number(this.mise.toFixed(2)),
-        //         Total: Number(this.total.toFixed(2)),
-        //     }
-        // })
+        console.table({
+            status: {
+                BNB: Number((this.bnb).toFixed(2)),
+                USD: Number(this.available.toFixed(2)),
+                Mise: Number(this.mise.toFixed(2)),
+                Total: Number(this.total.toFixed(2)),
+            }
+        })
     }
 }
 
@@ -245,9 +244,9 @@ async function main(myBot) {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
-    // await myBot.getBuy()
+    await myBot.getBuy()
 
-    // myBot.getConsole()
+    myBot.getConsole()
 
     start(300000)
 }
