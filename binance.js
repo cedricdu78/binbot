@@ -106,7 +106,6 @@ class Bot {
 
     async getSellOrdersNegative() {
         await new Promise((resolve,) => {
-            let counter = 0
             this.orders.forEach(order => {
                 if (Number(order.plusValue) <= -0.5) {
                     this.api.cancelOrder({symbol : order.currency, orderId: order.orderId}).then(() => {
@@ -115,18 +114,16 @@ class Bot {
                         }).then(() => {
                             console.log("Sell: " + order.currency)
                             this.orders = this.orders.filter(o => o.currency !== order.currency)
-                            if (++counter === this.orders.length) resolve();
+                            if (this.orders.indexOf(order) === this.orders.length - 1) resolve()
                         }).catch(e => {
                             console.error(e)
-                            if (this.orders.indexOf(v) === this.orders.length - 1)
-                                resolve()
+                            if (this.orders.indexOf(order) === this.orders.length - 1) resolve()
                         })
                     }).catch(e => {
                         console.error(e)
-                        if (this.orders.indexOf(v) === this.orders.length - 1)
-                            resolve()
+                        if (this.orders.indexOf(order) === this.orders.length - 1) resolve()
                     })
-                } else if (++counter === this.orders.length) resolve();
+                } else if (this.orders.indexOf(order) === this.orders.length - 1) resolve()
             })
         })
     }
