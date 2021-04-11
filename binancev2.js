@@ -55,9 +55,11 @@ class Bot {
         this.price = 0
         this.total = 0
         await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
-            let price = this.bookTickers.find(v => v.symbol === k + config.baseMoney()) !== undefined ? this.bookTickers.find(v => v.symbol === k + config.baseMoney()).price : 0
+            let price = this.bookTickers.find(v => v.symbol === k + config.baseMoney()) !== undefined ?
+                this.bookTickers.find(v => v.symbol === k + config.baseMoney()).price : 0
             this.total += price * (Number(v.available) + Number(v.onOrder))
-            this.balances.push({symbol: k, available: Number(v.available), onOrder: Number(v.onOrder), price: price * (Number(v.available) + Number(v.onOrder)) })
+            this.balances.push({symbol: k, available: Number(v.available), onOrder: Number(v.onOrder),
+                price: price * (Number(v.available) + Number(v.onOrder)) })
         }))
 
         this.available = this.balances.find(v => v.symbol === "USDT").available
@@ -65,7 +67,7 @@ class Bot {
 
         this.total += this.available
 
-        this.mise = this.total * 99 / 100
+        this.mise = (this.total - this.bnb) * 99 / 100
     }
 
     getOrders() {
