@@ -130,6 +130,8 @@ class Bot {
             && Number(this.histories[k.symbol][2].prc) < Number(this.histories[k.symbol][3].prc)
             && Number(this.histories[k.symbol][3].prc) < Number(this.histories[k.symbol][4].prc)
 
+            && k.prc > 0.5
+
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         console.log(new Date().toLocaleString())
