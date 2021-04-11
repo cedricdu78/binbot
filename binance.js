@@ -29,8 +29,7 @@ class Bot {
 
     async getOpenOrders() {
         (await this.api.openOrders()).forEach(function(v) {
-            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
-                orderId: v.orderId})
+            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
         }, this.openOrders)
     }
 
@@ -86,7 +85,6 @@ class Bot {
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
                 .toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
-            let plusValue = (nowValue / openValue * 100) - 100
 
             this.orders.push(func.order(
                 order.symbol,
@@ -95,7 +93,7 @@ class Bot {
                 openValue,
                 nowValue,
                 order.time,
-                plusValue,
+                (nowValue / openValue * 100) - 100,
                 order.orderId
             ))
 
@@ -175,7 +173,8 @@ class Bot {
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
-        this.exchangeInfo = this.exchangeInfo.slice(0, nbMise <= 29 ? nbMise : 29)
+        this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
+            .slice(0, nbMise <= 29 ? nbMise : 29)
     }
 
     getPrecisions() {
@@ -257,6 +256,7 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
+        if (this.exchangeInfo.length > 0) console.table(this.resume.details, ["symbol", "am_price"])
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.available > 0
             && v.symbol !== config.baseMoney()
@@ -303,7 +303,6 @@ async function main() {
     myBot.getPricesUnordered()
     /* Get orders in list */
     myBot.getOrders()
-
     /* Remove currencies without baseMoney */
     myBot.getCurrenciesFilteredByBaseMoney()
     /* Remove currencies ordered */
