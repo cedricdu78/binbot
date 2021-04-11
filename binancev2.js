@@ -65,7 +65,7 @@ class Bot {
 
         this.total += this.available
 
-        this.mise = this.total * 95 / 100
+        this.mise = this.total * 99 / 100
     }
 
     getOrders() {
