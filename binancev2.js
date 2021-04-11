@@ -105,7 +105,7 @@ class Bot {
     getCurrenciesFilteredByConditions() {
         this.bookTickers.forEach(value => {
             if (this.histories[value.symbol] !== undefined) {
-                if (this.histories[value.symbol].length === 5)
+                if (this.histories[value.symbol].length === 6)
                     this.histories[value.symbol].shift()
 
                 this.histories[value.symbol].push(value.price)
