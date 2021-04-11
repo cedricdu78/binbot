@@ -29,7 +29,8 @@ class Bot {
 
     async getOpenOrders() {
         (await this.api.openOrders()).forEach(function(v) {
-            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
+            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
+                orderId: v.orderId})
         }, this.openOrders)
     }
 
@@ -106,18 +107,18 @@ class Bot {
     async getSellOrdersNegative() {
         await new Promise((resolve,) => {
             let counter = 0
-            this.orders.forEach(function (order) {
-                if (order.plusValue <= -0.5) {
-                    this.api.cancel(order.symbol, order.orderId, () => {
+            this.orders.forEach(order => {
+                if (Number(order.plusValue) <= -0.5) {
+                    this.api.cancelOrder({symbol : order.currency, orderId: order.orderId}, () => {
                         console.log("Cancel: " + order.symbol)
                         this.api.marketSell(order.symbol, order['origQty'], {type: 'MARKET'}, () => {
                             console.log("Sell: " + order.symbol)
                             this.orders = this.orders.filter(o => o.symbol !== order.symbol)
-                            if (++counter === this.exchangeInfo.length) resolve();
+                            if (++counter === this.orders.length) resolve();
                         })
                     })
-                } else if (++counter === this.exchangeInfo.length) resolve();
-            }, this)
+                } else if (++counter === this.orders.length) resolve();
+            })
         })
     }
 
@@ -358,4 +359,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
