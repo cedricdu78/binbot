@@ -2,7 +2,6 @@ const binSecret = require('./config/secrets');
 const config = require('./config/config');
 
 const Binance = require('node-binance-api');
-const { exec } = require("child_process");
 
 class Bot {
 
