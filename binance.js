@@ -100,17 +100,25 @@ class Bot {
 
             this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
             this.resume.target += order.price * order.volume
-
-            if (plusValue <= -0.5) {
-                this.api.cancel(order.symbol, order.orderId, () => {
-                    console.log("Cancel: " + order.symbol)
-                    this.api.marketSell(order.symbol, order['origQty'], { type: 'MARKET' }, () => {
-                        console.log("Sell: " + order.symbol)
-                    })
-                })
-            }
-
         }, this)
+    }
+
+    async getSellOrdersNegative() {
+        await new Promise((resolve,) => {
+            let counter = 0
+            this.orders.forEach(function (order) {
+                if (order.plusValue <= -0.5) {
+                    this.api.cancel(order.symbol, order.orderId, () => {
+                        console.log("Cancel: " + order.symbol)
+                        this.api.marketSell(order.symbol, order['origQty'], {type: 'MARKET'}, () => {
+                            console.log("Sell: " + order.symbol)
+                            this.orders = this.orders.filter(o => o.symbol !== order.symbol)
+                            if (++counter === this.exchangeInfo.length) resolve();
+                        })
+                    })
+                } else if (++counter === this.exchangeInfo.length) resolve();
+            }, this)
+        })
     }
 
     getCurrenciesFilteredByBaseMoney() {
@@ -314,6 +322,10 @@ async function main() {
     myBot.getPricesUnordered()
     /* Get orders in list */
     myBot.getOrders()
+
+    /* Clean order negative */
+    await myBot.getSellOrdersNegative()
+
     /* Remove currencies without baseMoney */
     myBot.getCurrenciesFilteredByBaseMoney()
     /* Remove currencies ordered */
