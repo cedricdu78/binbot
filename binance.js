@@ -110,10 +110,10 @@ class Bot {
             this.orders.forEach(order => {
                 if (Number(order.plusValue) <= -0.5) {
                     this.api.cancelOrder({symbol : order.currency, orderId: order.orderId}, () => {
-                        console.log("Cancel: " + order.symbol)
-                        this.api.marketSell(order.symbol, order['origQty'], {type: 'MARKET'}, () => {
-                            console.log("Sell: " + order.symbol)
-                            this.orders = this.orders.filter(o => o.symbol !== order.symbol)
+                        console.log("Cancel: " + order.currency)
+                        this.api.marketSell(order.currency, order.volume, {type: 'MARKET'}, () => {
+                            console.log("Sell: " + order.currency)
+                            this.orders = this.orders.filter(o => o.currency !== order.currency)
                             if (++counter === this.orders.length) resolve();
                         })
                     })
