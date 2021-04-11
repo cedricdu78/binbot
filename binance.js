@@ -281,7 +281,6 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
-        if (this.exchangeInfo.length > 0) console.table(this.resume.details, ["symbol", "am_price"])
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.available > 0
             && v.symbol !== config.baseMoney()
