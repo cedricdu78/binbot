@@ -199,8 +199,7 @@ class Bot {
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
-        this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
-            .slice(0, nbMise <= 29 ? nbMise : 29)
+        this.exchangeInfo = this.exchangeInfo.slice(0, nbMise <= 29 ? nbMise : 29)
     }
 
     getPrecisions() {
