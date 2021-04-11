@@ -108,31 +108,38 @@ class Bot {
                 if (this.histories[value.symbol].length === 5)
                     this.histories[value.symbol].shift()
 
-                this.histories[value.symbol].push(value.price)
+                value.prc = Number(((this.histories[value.symbol][this.histories[value.symbol].length - 1].price
+                    - this.histories[value.symbol][0].price) / this.histories[value.symbol][0].price) * 100)
+                this.histories[value.symbol].push({price: value.price, prc: value.prc})
             }
-            else this.histories[value.symbol] = [value.price]
+            else this.histories[value.symbol] = [{price: value.price, prc: 0}]
         })
 
-        this.bookTickers.forEach(k => {
-            k.prc = Number(((this.histories[k.symbol][4] - this.histories[k.symbol][0]) / this.histories[k.symbol][0]) * 100)
-        })
+        this.bookTickers = this.bookTickers.filter(k =>
+            this.histories[k.symbol].length === 5
 
-        this.bookTickers = this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
-            < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
-            < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
-            < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4]) && (k.prc > 1)
+            && Number(this.histories[k.symbol][0].price) < Number(this.histories[k.symbol][1].price)
+            && Number(this.histories[k.symbol][1].price) < Number(this.histories[k.symbol][2].price)
+            && Number(this.histories[k.symbol][2].price) < Number(this.histories[k.symbol][3].price)
+            && Number(this.histories[k.symbol][3].price) < Number(this.histories[k.symbol][4].price)
+
+            && Number(this.histories[k.symbol][0].prc) < Number(this.histories[k.symbol][1].prc)
+            && Number(this.histories[k.symbol][1].prc) < Number(this.histories[k.symbol][2].prc)
+            && Number(this.histories[k.symbol][2].prc) < Number(this.histories[k.symbol][3].prc)
+            && Number(this.histories[k.symbol][3].prc) < Number(this.histories[k.symbol][4].prc)
+
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
-        this.bookTickers.forEach(v => {
+        console.log(new Date().toLocaleString())
+        this.bookTickers.sort((a, b) => b.prc - a.prc).forEach(v => {
             console.log(v.symbol + " " + v.prc)
         })
 
-        let nbMise = String(this.available / this.mise).split('.')[0]
-
-        this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, nbMise)
-
-        this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
+        // let nbMise = String(this.available / this.mise).split('.')[0]
+        //
+        // this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, nbMise)
+        //
+        // this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
     }
 
     async getBuy() {
@@ -142,7 +149,7 @@ class Bot {
                 console.log()
                 this.currencies.forEach(value => {
 
-                    value.price = Number(this.histories[value.symbol][this.histories[value.symbol].length - 1])
+                    value.price = Number(this.histories[value.symbol][this.histories[value.symbol].length - 1].price)
 
                     value.lenPrice = value.minPrice.split('.')[0] === "0"
                         ? (value.minPrice.split('.')[1].split('1')[0] + '1').length : 0
@@ -238,11 +245,11 @@ async function main(myBot) {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
-    await myBot.getBuy()
+    // await myBot.getBuy()
 
-    myBot.getConsole()
+    // myBot.getConsole()
 
-    start(120000)
+    start(300000)
 }
 
-start()
+start(0)
