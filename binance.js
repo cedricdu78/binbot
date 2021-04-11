@@ -85,6 +85,7 @@ class Bot {
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
                 .toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
+            let plusValue = (nowValue / openValue * 100) - 100
 
             this.orders.push(func.order(
                 order.symbol,
@@ -93,12 +94,22 @@ class Bot {
                 openValue,
                 nowValue,
                 order.time,
-                (nowValue / openValue * 100) - 100,
+                plusValue,
                 order.orderId
             ))
 
             this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
             this.resume.target += order.price * order.volume
+
+            if (plusValue <= -0.5) {
+                this.api.cancel(order.symbol, order.orderId, () => {
+                    console.log("Cancel: " + order.symbol)
+                    this.api.marketSell(order.symbol, order['origQty'], { type: 'MARKET' }, () => {
+                        console.log("Sell: " + order.symbol)
+                    })
+                })
+            }
+
         }, this)
     }
 
