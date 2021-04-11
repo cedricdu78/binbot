@@ -8,7 +8,7 @@ module.exports = {
     // interval :   Crypto history every 15 minutes over a week
     // median :     Purchase of a crypto if price between -0% and -20% of the average calculated over a week
     // prc :        Percentage difference between the average and the maximum over the week
-    mise: function () { return 4 },
+    mise: function () { return 8 },
     profit: function () { return 1 },
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
