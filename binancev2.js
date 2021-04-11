@@ -121,7 +121,8 @@ class Bot {
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
+            < Number(this.histories[k.symbol][4]) && Number(this.histories[k.symbol][4])
+            < Number(this.histories[k.symbol][5]) && (k.prc > 1)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         this.bookTickers.forEach(v => {
