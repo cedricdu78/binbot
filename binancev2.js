@@ -105,7 +105,7 @@ class Bot {
     getCurrenciesFilteredByConditions() {
         this.bookTickers.forEach(value => {
             if (this.histories[value.symbol] !== undefined) {
-                if (this.histories[value.symbol].length === 6)
+                if (this.histories[value.symbol].length === 5)
                     this.histories[value.symbol].shift()
 
                 this.histories[value.symbol].push(value.price)
@@ -121,8 +121,7 @@ class Bot {
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4]) && Number(this.histories[k.symbol][4])
-            < Number(this.histories[k.symbol][5]) && (k.prc > 1)
+            < Number(this.histories[k.symbol][4]) && (k.prc > 1)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         this.bookTickers.forEach(v => {
@@ -243,7 +242,7 @@ async function main(myBot) {
 
     myBot.getConsole()
 
-    start(5000)
+    start(120000)
 }
 
 start()
