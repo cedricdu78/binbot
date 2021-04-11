@@ -124,7 +124,6 @@ class Bot {
             < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
-        console.log(new Date().toLocaleString())
         this.bookTickers.forEach(v => {
             console.log(v.symbol + " " + v.prc)
         })
@@ -204,18 +203,18 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders)
-        if (this.new_orders.length > 0) console.table(this.new_orders)
-        if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
-            console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
+        // if (this.new_orders.length > 0) console.table(this.new_orders)
+        // if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
+        //     console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
 
-        console.table({
-            status: {
-                BNB: Number((this.bnb).toFixed(2)),
-                USD: Number(this.available.toFixed(2)),
-                Mise: Number(this.mise.toFixed(2)),
-                Total: Number(this.total.toFixed(2)),
-            }
-        })
+        // console.table({
+        //     status: {
+        //         BNB: Number((this.bnb).toFixed(2)),
+        //         USD: Number(this.available.toFixed(2)),
+        //         Mise: Number(this.mise.toFixed(2)),
+        //         Total: Number(this.total.toFixed(2)),
+        //     }
+        // })
     }
 }
 
