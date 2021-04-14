@@ -11,20 +11,10 @@ class Bot {
         APISECRET: binSecret.secret()
     });
 
-    balances = []
     exchangeInfo = []
-    openOrders = []
     bookTickers = []
 
     histories = []
-    currencies = []
-    orders = []
-    new_orders = []
-    mise = 0
-
-    available = 0
-    bnb = 0
-    total = 0
 
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
@@ -35,59 +25,11 @@ class Bot {
         }))
     }
 
-    async getOpenOrders() {
-        this.openOrders = []
-        await this.api.openOrders().then(openOrders => openOrders.forEach(v => {
-            this.openOrders.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time,
-                orderId: v.orderId})
-        }))
-    }
-
     async getBookTickers() {
         this.bookTickers = []
         await this.api.bookTickers().then(bookTickers => Object.entries(bookTickers).forEach(([k,v]) => {
             this.bookTickers.push({symbol: k, price: Number(v.ask)})
         }))
-    }
-
-    async getBalances() {
-        this.balances = []
-        this.price = 0
-        this.total = 0
-        await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
-            let price = this.bookTickers.find(v => v.symbol === k + config.baseMoney()) !== undefined ?
-                this.bookTickers.find(v => v.symbol === k + config.baseMoney()).price : 0
-            this.total += price * (Number(v.available) + Number(v.onOrder))
-            this.balances.push({symbol: k, available: Number(v.available), onOrder: Number(v.onOrder),
-                price: price * (Number(v.available) + Number(v.onOrder)) })
-        }))
-
-        this.available = this.balances.find(v => v.symbol === "USDT").available
-        this.bnb = this.balances.find(v => v.symbol === "BNB").price
-
-        this.total += this.available
-
-        this.mise = (this.total - this.bnb) * 24.5 / 100
-    }
-
-    getOrders() {
-        this.orders = []
-        this.openOrders.forEach(order => {
-            let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
-            let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
-            let wantValue = (order.price * order.volume).toFixed(2)
-
-            this.orders.push(func.order(
-                order.symbol,
-                order.volume,
-                wantValue,
-                openValue,
-                nowValue,
-                order.time,
-                (nowValue / openValue * 100) - 100,
-                order.orderId
-            ))
-        })
     }
 
     getCurrenciesFilteredByBaseMoney() {
@@ -119,7 +61,7 @@ class Bot {
 
         console.log()
         console.log(new Date().toLocaleString())
-        console.table(this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0,20))
+        if (this.bookTickers.length > 0) console.table(this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0,20))
     }
 }
 
@@ -135,11 +77,8 @@ async function main(myBot) {
         await myBot.getExchangeInfo()
     }
 
-    await myBot.getOpenOrders()
     await myBot.getBookTickers()
-    await myBot.getBalances()
 
-    myBot.getOrders()
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
