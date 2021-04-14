@@ -87,6 +87,9 @@ class Bot {
                 (nowValue / openValue * 100) - 100,
                 order.orderId
             ))
+
+            // this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
+            // this.resume.target += order.price * order.volume
         })
     }
 
@@ -104,7 +107,7 @@ class Bot {
     getCurrenciesFilteredByConditions() {
         this.bookTickers.forEach(value => {
             if (this.histories[value.symbol] !== undefined) {
-                if (this.histories[value.symbol].length === 5)
+                if (this.histories[value.symbol].length === 6)
                     this.histories[value.symbol].shift()
 
                 value.prc = Number(((this.histories[value.symbol][this.histories[value.symbol].length - 1].price
@@ -115,11 +118,100 @@ class Bot {
         })
 
         this.bookTickers = this.bookTickers.filter(k =>
-            this.histories[k.symbol].length === 5)
+            this.histories[k.symbol].length === 6
+
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         console.log()
         console.log(new Date().toLocaleString())
         console.table(this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0,20))
+
+        // let nbMise = String(this.available / this.mise).split('.')[0]
+        //
+        // this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, nbMise)
+        //
+        // this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
+    }
+
+    async getBuy() {
+        this.new_orders = []
+        if (this.currencies.length > 0) {
+            await new Promise((resolve,) => {
+                this.currencies.forEach(value => {
+
+                    value.price = Number(this.histories[value.symbol][this.histories[value.symbol].length - 1].price)
+
+                    value.lenPrice = value.minPrice.split('.')[0] === "0"
+                        ? (value.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+
+                    value.lenVol = value.minQty.split('.')[0] === "0"
+                        ? (value.minQty.split('.')[1].split('1')[0] + '1').length : 0
+
+                    value.volume = String(this.mise / value.price)
+                    value.volume = value.volume.substr(0, value.volume.split('.')[0].length
+                        + (value.lenVol ? 1 : 0) + value.lenVol)
+
+                    value.sellPrice = String(value.price * (1 / 100 + 1))
+                    value.sellPrice = value.sellPrice.substr(0, value.sellPrice.split('.')[0].length
+                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
+
+                    value.price = String(value.price * Number(value.volume))
+                    value.price = value.price.substr(0, value.price.split('.')[0].length
+                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
+
+                    this.api.marketBuy(value.symbol, value.volume, (error,) => {
+                        if (error !== null) {
+                            let responseJson = JSON.parse(error.body)
+                            console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: "
+                                + responseJson["msg"] + " " + Number(value.price)
+                                + " " + value.volume)
+
+                            if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                                resolve()
+                        } else {
+                            this.available -= Number(value.price)
+                            this.bnb -= Number(value.price) * config.feeValue() / 100
+
+                            this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
+                                if (error !== null) {
+                                    let responseJson = JSON.parse(error.body)
+                                    console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
+                                        + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
+                                } else {
+                                    this.new_orders.push(func.order(value.symbol,
+                                        value.volume,
+                                        Number(value.sellPrice) * Number(value.volume),
+                                        value.price,
+                                        value.price,
+                                        Date.now()
+                                        )
+                                    )
+                                }
+
+                                if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                                    resolve()
+                            })
+                        }
+                    })
+                })
+            })
+        }
+    }
+
+    getConsole() {
+        if (this.orders.length > 0) console.table(this.orders)
+        if (this.new_orders.length > 0) console.table(this.new_orders)
+        if (this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()).length > 0)
+            console.table(this.balances.filter(v => v.price > 1 && v.available > 0 && v.symbol !== config.feeMoney()))
+
+        console.table({
+            status: {
+                BNB: Number((this.bnb).toFixed(2)),
+                USD: Number(this.available.toFixed(2)),
+                Mise: Number(this.mise.toFixed(2)),
+                Total: Number(this.total.toFixed(2)),
+            }
+        })
     }
 }
 
@@ -143,9 +235,10 @@ async function main(myBot) {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
-    // start(2000)
-    // start(25000)
-    // start(300000)
+    // await myBot.getBuy()
+
+    // myBot.getConsole()
+
     start(720000)
 }
 

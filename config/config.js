@@ -19,7 +19,7 @@ module.exports = {
     // feeValue     : Fee value with BNB is 0.750 but for security 0.15
     baseMoney: function () { return "USDT" },
     feeMoney: function () { return "BNB" },
-    feeValue: function() { return 0.15 },
+    feeValue: function() { return 0.075 },
 
     // restartTime : Delay before restart bot
     restartTime: function() { return 20000 }
