@@ -143,10 +143,7 @@ async function main(myBot) {
     myBot.getCurrenciesFilteredByBaseMoney()
     myBot.getCurrenciesFilteredByConditions()
 
-    // start(2000)
-    // start(25000)
-    // start(300000)
-    start(720000)
+    start(process.argv[2])
 }
 
 start(0)

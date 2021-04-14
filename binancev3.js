@@ -65,7 +65,7 @@ class Bot {
 
         this.total += this.available
 
-        this.mise = this.total * 10 / 100
+        this.mise = (this.total - this.bnb) * 99 / 100
     }
 
     getOrders() {
@@ -83,9 +83,6 @@ class Bot {
                 order.time,
                 (nowValue / openValue * 100) - 100
             ))
-
-            // this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
-            // this.resume.target += order.price * order.volume
         })
     }
 
@@ -241,4 +238,4 @@ async function main(myBot) {
     start(300000)
 }
 
-start()
+start(0)
