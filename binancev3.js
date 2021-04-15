@@ -26,6 +26,8 @@ class Bot {
     bnb = 0
     total = 0
 
+    lastCurrency = ""
+
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
             this.exchangeInfo.push({
@@ -117,7 +119,8 @@ class Bot {
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
             < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0
+            && k.symbol !== this.lastCurrency)
 
         let nbMise = String(this.available / this.mise).split('.')[0]
 
@@ -173,6 +176,7 @@ class Bot {
                                     console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
                                         + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
                                 } else {
+                                    this.lastCurrency = value.symbol
                                     this.new_orders.push((func.order(value.symbol,
                                             value.volume,
                                             Number(value.sellPrice) * Number(value.volume),
