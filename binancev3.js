@@ -100,10 +100,12 @@ class Bot {
     getCurrenciesFilteredByConditions() {
         this.bookTickers.forEach(value => {
             if (this.histories[value.symbol] !== undefined) {
-                if (this.histories[value.symbol].length === 5) {
+                if (this.histories[value.symbol].length === 5)
                     this.histories[value.symbol].shift()
+
+                if (this.histories[value.symbol].length === 4)
                     value.prc = Number(((value.price - this.histories[value.symbol][0].price) / this.histories[value.symbol][0].price) * 100)
-                } else value.prc = 0
+                else value.prc = 0
 
                 this.histories[value.symbol].push({price: value.price, prc: value.prc})
             }
