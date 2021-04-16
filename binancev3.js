@@ -133,9 +133,6 @@ class Bot {
         console.log(this.bookTickers.filter(k => Number(k.prc > 0.5)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0))
 
-        console.log("4")
-        console.log(this.bookTickers.filter(k => this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0))
-
         this.bookTickers = this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
