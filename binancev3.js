@@ -256,4 +256,4 @@ async function main(myBot) {
     start(300000)
 }
 
-start(0)
+start()
