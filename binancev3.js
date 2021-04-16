@@ -166,47 +166,47 @@ class Bot {
                         + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
                     console.log(value.symbol + " " + value.price + " " + value.sellPrice + " " + value.sellPriceLimit)
+/*
+                    this.api.order({symbol: value.symbol, side: 'BUY', quantity: value.volume, type: 'MARKET'
+                    }).then(() => {
+                        this.available -= Number(value.price)
+                        this.bnb -= Number(value.price) * config.feeValue() / 100
 
-                    // this.api.order({symbol: value.symbol, side: 'BUY', quantity: value.volume, type: 'MARKET'
-                    // }).then(() => {
-                    //     this.available -= Number(value.price)
-                    //     this.bnb -= Number(value.price) * config.feeValue() / 100
-                    //
-                    //     this.api.orderOco({ symbol: value.symbol, side: 'SELL', quantity: value.volume, price: value.sellPrice,
-                    //         stopPrice: value.sellPriceLimit, stopLimitPrice: value.sellPriceLimit,
-                    //     }).then(() => {
-                    //         this.lastCurrency = value.symbol
-                    //         this.new_orders.push((func.order(value.symbol,
-                    //                 value.volume,
-                    //                 Number(value.sellPriceLimit) * Number(value.volume),
-                    //                 Number(value.sellPrice) * Number(value.volume),
-                    //                 value.price,
-                    //                 value.price,
-                    //                 Date.now(),
-                    //                 0
-                    //             )
-                    //         ))
-                    //
-                    //         if (this.currencies.indexOf(value) === this.currencies.length - 1)
-                    //             resolve()
-                    //     }).catch(e => {
-                    //         let responseJson = JSON.parse(e.body)
-                    //         console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
-                    //             + responseJson["msg"] + " " + value.sellPrice + " " + value.sellPriceLimit + " "
-                    //             + value.volume)
-                    //
-                    //         if (this.currencies.indexOf(value) === this.currencies.length - 1)
-                    //             resolve()
-                    //     })
-                    // }).catch(e => {
-                    //     let responseJson = JSON.parse(e.body)
-                    //     console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: "
-                    //         + responseJson["msg"] + " " + Number(value.price)
-                    //         + " " + value.volume)
-                    //
-                    //     if (this.currencies.indexOf(value) === this.currencies.length - 1)
-                    //         resolve()
-                    // })
+                        this.api.orderOco({ symbol: value.symbol, side: 'SELL', quantity: value.volume, price: value.sellPrice,
+                            stopPrice: value.sellPriceLimit, stopLimitPrice: value.sellPriceLimit,
+                        }).then(() => {
+                            this.lastCurrency = value.symbol
+                            this.new_orders.push((func.order(value.symbol,
+                                    value.volume,
+                                    Number(value.sellPriceLimit) * Number(value.volume),
+                                    Number(value.sellPrice) * Number(value.volume),
+                                    value.price,
+                                    value.price,
+                                    Date.now(),
+                                    0
+                                )
+                            ))
+
+                            if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                                resolve()
+                        }).catch(e => {
+                            let responseJson = JSON.parse(e.body)
+                            console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
+                                + responseJson["msg"] + " " + value.sellPrice + " " + value.sellPriceLimit + " "
+                                + value.volume)
+
+                            if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                                resolve()
+                        })
+                    }).catch(e => {
+                        let responseJson = JSON.parse(e.body)
+                        console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: "
+                            + responseJson["msg"] + " " + Number(value.price)
+                            + " " + value.volume)
+
+                        if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                            resolve()
+                    })*/
                 })
             })
         }
