@@ -103,27 +103,47 @@ class Bot {
                 if (this.histories[value.symbol].length === 5)
                     this.histories[value.symbol].shift()
 
-                this.histories[value.symbol].push(value.price)
+                value.prc = Number(((this.histories[value.symbol][4] - this.histories[value.symbol][0]) / this.histories[value.symbol][0]) * 100)
+                this.histories[value.symbol].push({price: value.price, prc: value.prc})
             }
-            else this.histories[value.symbol] = [value.price]
+            else this.histories[value.symbol] = [{price: value.price, prc: 0}]
         })
-
-        this.bookTickers.forEach(k => {
-            k.prc = Number(((this.histories[k.symbol][4] - this.histories[k.symbol][0]) / this.histories[k.symbol][0]) * 100)
-        })
-
 
         console.log("1")
-        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
-            < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
-            < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
-            < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4])
+        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0].value)
+            < Number(this.histories[k.symbol][1].value) && Number(this.histories[k.symbol][1].value)
+            < Number(this.histories[k.symbol][2].value) && Number(this.histories[k.symbol][2].value)
+            < Number(this.histories[k.symbol][3].value) && Number(this.histories[k.symbol][3].value)
+            < Number(this.histories[k.symbol][4].value) && Number(this.histories[k.symbol][0].prc)
+            < Number(this.histories[k.symbol][1].prc) && Number(this.histories[k.symbol][1].prc)
+            < Number(this.histories[k.symbol][2].prc) && Number(this.histories[k.symbol][2].prc)
+            < Number(this.histories[k.symbol][3].prc) && Number(this.histories[k.symbol][3].prc)
+            < Number(this.histories[k.symbol][4].prc)
             && k.prc > 3
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
             .sort((a, b) => b.prc - a.prc).slice(0,20))
 
         console.log("2")
+        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0].value)
+            < Number(this.histories[k.symbol][1].value) && Number(this.histories[k.symbol][1].value)
+            < Number(this.histories[k.symbol][2].value) && Number(this.histories[k.symbol][2].value)
+            < Number(this.histories[k.symbol][3].value) && Number(this.histories[k.symbol][3].value)
+            < Number(this.histories[k.symbol][4].value)
+            && k.prc > 3
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
+            .sort((a, b) => b.prc - a.prc).slice(0,20))
+
+        console.log("3")
+        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0].value)
+            < Number(this.histories[k.symbol][1].value) && Number(this.histories[k.symbol][1].value)
+            < Number(this.histories[k.symbol][2].value) && Number(this.histories[k.symbol][2].value)
+            < Number(this.histories[k.symbol][3].value) && Number(this.histories[k.symbol][3].value)
+            < Number(this.histories[k.symbol][4].value)
+            && k.prc > 3
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
+            .sort((a, b) => b.prc - a.prc).slice(0,20))
+
+        console.log("4")
         console.table(this.bookTickers.filter(k => this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0
             && k.prc > 3)
             .sort((a, b) => b.prc - a.prc).slice(0,20))
