@@ -2,13 +2,13 @@ const binSecret = require('./config/secrets');
 const config = require('./config/config');
 const func = require('./lib/func');
 
-const Binance = require('node-binance-api');
+const Binance = require('binance-api-node').default
 
 class Bot {
 
-    api = new Binance().options({
-        APIKEY: binSecret.key(),
-        APISECRET: binSecret.secret()
+    api = Binance({
+        apiKey: binSecret.key(),
+        apiSecret: binSecret.secret()
     });
 
     balances = []
@@ -26,41 +26,43 @@ class Bot {
     bnb = 0
     total = 0
 
+    limitNegative = 0.2
+
     lastCurrency = ""
 
     async getExchangeInfo() {
-        await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
-            this.exchangeInfo.push({
-                symbol: v.symbol, status: v.status, minPrice: v['filters'][0].minPrice,
+        (await this.api.exchangeInfo())['symbols'].forEach(function(v) {
+            this.push({symbol: v.symbol, status: v.status, minPrice: v['filters'][0].minPrice,
                 minQty: v['filters'][2].minQty
             })
-        }))
+        }, this.exchangeInfo)
     }
 
     async getOpenOrders() {
-        this.openOrders = []
-        await this.api.openOrders().then(openOrders => openOrders.forEach(v => {
-            this.openOrders.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
-        }))
+        this.orders = [];
+        (await this.api.openOrders()).forEach(function(v) {
+            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
+        }, this.openOrders)
     }
 
     async getBookTickers() {
-        this.orders = []
         this.bookTickers = []
-        await this.api.bookTickers().then(bookTickers => Object.entries(bookTickers).forEach(([k,v]) => {
-            this.bookTickers.push({symbol: k, price: Number(v.ask)})
-        }))
+        Object.entries(await this.api.prices()).forEach(function([k,v]) {
+            this.push({symbol: k, price: Number(v)})
+        }, this.bookTickers)
     }
 
     async getBalances() {
         this.balances = []
-        this.price = 0
-        this.total = 0
-        await this.api.balance().then(balances => Object.entries(balances).forEach(([k,v]) => {
-            let price = this.bookTickers.find(v => v.symbol === k + config.baseMoney()) !== undefined ? this.bookTickers.find(v => v.symbol === k + config.baseMoney()).price : 0
-            this.total += price * (Number(v.available) + Number(v.onOrder))
-            this.balances.push({symbol: k, available: Number(v.available), onOrder: Number(v.onOrder), price: price * (Number(v.available) + Number(v.onOrder)) })
-        }))
+        this.total = 0;
+
+        (await this.api.accountInfo())['balances'].forEach(function(v) {
+            let price = this.bookTickers.find(k => k.symbol === v.asset + config.baseMoney()) !== undefined ?
+                this.bookTickers.find(k => k.symbol === v.asset + config.baseMoney()).price : 0
+            this.total += price * (Number(v.free) + Number(v.locked))
+            price = price * (Number(v.free) + Number(v.locked))
+            this.balances.push({symbol: v.asset, available: Number(v.free), onOrder: Number(v.locked), price: price})
+        }, this)
 
         this.available = this.balances.find(v => v.symbol === "USDT").available
         this.bnb = this.balances.find(v => v.symbol === "BNB").price
@@ -73,12 +75,14 @@ class Bot {
     getOrders() {
         this.openOrders.forEach(order => {
             let openValue = (order.price / (1 / 100 + 1) * order.volume).toFixed(2)
+            let limitValue = (order.price * (1 - 1 / 100) * (1 - this.limitNegative / 100) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
 
             this.orders.push(func.order(
                 order.symbol,
                 order.volume,
+                limitValue,
                 wantValue,
                 openValue,
                 nowValue,
@@ -153,46 +157,56 @@ class Bot {
                     value.sellPrice = value.sellPrice.substr(0, value.sellPrice.split('.')[0].length
                         + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
+                    value.sellPriceLimit = String(value.price * (1 - this.limitNegative / 100))
+                    value.sellPriceLimit = value.sellPriceLimit.substr(0, value.sellPriceLimit.split('.')[0].length
+                        + (value.lenPrice ? 1 : 0) + value.lenPrice)
+
                     value.price = String(value.price * Number(value.volume))
                     value.price = value.price.substr(0, value.price.split('.')[0].length
                         + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                    this.api.marketBuy(value.symbol, value.volume, (error,) => {
-                        if (error !== null) {
-                            let responseJson = JSON.parse(error.body)
-                            console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: "
-                                + responseJson["msg"] + " " + Number(value.price)
-                                + " " + value.volume)
+                    console.log(value.symbol + " " + value.price + " " + value.sellPrice + " " + value.sellPriceLimit)
 
-                            if (this.currencies.indexOf(value) === this.currencies.length - 1)
-                                resolve()
-                        } else {
-                            this.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
-                            this.bnb -= Number(value.price) * config.feeValue() / 100
-
-                            this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
-                                if (error !== null) {
-                                    let responseJson = JSON.parse(error.body)
-                                    console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
-                                        + responseJson["msg"] + " " + value.sellPrice + " " + value.volume)
-                                } else {
-                                    this.lastCurrency = value.symbol
-                                    this.new_orders.push((func.order(value.symbol,
-                                            value.volume,
-                                            Number(value.sellPrice) * Number(value.volume),
-                                            value.price,
-                                            value.price,
-                                            Date.now(),
-                                            0
-                                        )
-                                    ))
-                                }
-
-                                if (this.currencies.indexOf(value) === this.currencies.length - 1)
-                                    resolve()
-                            })
-                        }
-                    })
+                    // this.api.order({symbol: value.symbol, side: 'BUY', quantity: value.volume, type: 'MARKET'
+                    // }).then(() => {
+                    //     this.available -= Number(value.price)
+                    //     this.bnb -= Number(value.price) * config.feeValue() / 100
+                    //
+                    //     this.api.orderOco({ symbol: value.symbol, side: 'SELL', quantity: value.volume, price: value.sellPrice,
+                    //         stopPrice: value.sellPriceLimit, stopLimitPrice: value.sellPriceLimit,
+                    //     }).then(() => {
+                    //         this.lastCurrency = value.symbol
+                    //         this.new_orders.push((func.order(value.symbol,
+                    //                 value.volume,
+                    //                 Number(value.sellPriceLimit) * Number(value.volume),
+                    //                 Number(value.sellPrice) * Number(value.volume),
+                    //                 value.price,
+                    //                 value.price,
+                    //                 Date.now(),
+                    //                 0
+                    //             )
+                    //         ))
+                    //
+                    //         if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                    //             resolve()
+                    //     }).catch(e => {
+                    //         let responseJson = JSON.parse(e.body)
+                    //         console.error("Sell: " + value.symbol + " [" + responseJson.code + "]: "
+                    //             + responseJson["msg"] + " " + value.sellPrice + " " + value.sellPriceLimit + " "
+                    //             + value.volume)
+                    //
+                    //         if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                    //             resolve()
+                    //     })
+                    // }).catch(e => {
+                    //     let responseJson = JSON.parse(e.body)
+                    //     console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: "
+                    //         + responseJson["msg"] + " " + Number(value.price)
+                    //         + " " + value.volume)
+                    //
+                    //     if (this.currencies.indexOf(value) === this.currencies.length - 1)
+                    //         resolve()
+                    // })
                 })
             })
         }
@@ -242,4 +256,4 @@ async function main(myBot) {
     start(300000)
 }
 
-start()
+start(0)
