@@ -138,7 +138,7 @@ class Bot {
                 console.log()
                 this.currencies.forEach(value => {
 
-                    value.price = Number(this.histories[value.symbol][this.histories[value.symbol].length - 1])
+                    value.price = Number(this.histories[value.symbol][this.histories[value.symbol].length - 1].price)
 
                     value.lenPrice = value.minPrice.split('.')[0] === "0"
                         ? (value.minPrice.split('.')[1].split('1')[0] + '1').length : 0
