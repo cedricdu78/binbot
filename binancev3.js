@@ -114,24 +114,24 @@ class Bot {
 
 
         console.log("1")
-        console.log(this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
+        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
             < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0))
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0).sort((a, b) => a.prc - b.prc))
 
         console.log("2")
-        console.log(this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
+        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
             < Number(this.histories[k.symbol][4])
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0))
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0).sort((a, b) => a.prc - b.prc))
 
         console.log("3")
-        console.log(this.bookTickers.filter(k => Number(k.prc > 0.5)
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0))
+        console.table(this.bookTickers.filter(k => Number(k.prc > 0.5)
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0).sort((a, b) => a.prc - b.prc))
 
         this.bookTickers = this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
