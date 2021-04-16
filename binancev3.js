@@ -119,7 +119,6 @@ class Bot {
             < Number(this.histories[k.symbol][2].prc) && Number(this.histories[k.symbol][2].prc)
             < Number(this.histories[k.symbol][3].prc) && Number(this.histories[k.symbol][3].prc)
             < Number(this.histories[k.symbol][4].prc)
-            && k.prc > 3
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
             .sort((a, b) => b.prc - a.prc).slice(0,20))
 
@@ -129,7 +128,6 @@ class Bot {
             < Number(this.histories[k.symbol][2].value) && Number(this.histories[k.symbol][2].value)
             < Number(this.histories[k.symbol][3].value) && Number(this.histories[k.symbol][3].value)
             < Number(this.histories[k.symbol][4].value)
-            && k.prc > 3
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
             .sort((a, b) => b.prc - a.prc).slice(0,20))
 
@@ -139,13 +137,11 @@ class Bot {
             < Number(this.histories[k.symbol][2].value) && Number(this.histories[k.symbol][2].value)
             < Number(this.histories[k.symbol][3].value) && Number(this.histories[k.symbol][3].value)
             < Number(this.histories[k.symbol][4].value)
-            && k.prc > 3
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
             .sort((a, b) => b.prc - a.prc).slice(0,20))
 
         console.log("4")
-        console.table(this.bookTickers.filter(k => this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0
-            && k.prc > 3)
+        console.table(this.bookTickers.filter(k => this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
             .sort((a, b) => b.prc - a.prc).slice(0,20))
 
         this.bookTickers = this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
