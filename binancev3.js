@@ -118,26 +118,21 @@ class Bot {
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0).sort((a, b) => a.prc - b.prc))
+            < Number(this.histories[k.symbol][4])
+            && k.prc > 3
+            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
+            .sort((a, b) => b.prc - a.prc).slice(0,20))
 
         console.log("2")
-        console.table(this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
-            < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
-            < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
-            < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4])
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0).sort((a, b) => a.prc - b.prc))
-
-        console.log("3")
-        console.table(this.bookTickers.filter(k => Number(k.prc > 0.5)
-            && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0).sort((a, b) => a.prc - b.prc))
+        console.table(this.bookTickers.filter(k => this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0
+            && k.prc > 3)
+            .sort((a, b) => b.prc - a.prc).slice(0,20))
 
         this.bookTickers = this.bookTickers.filter(k => Number(this.histories[k.symbol][0])
             < Number(this.histories[k.symbol][1]) && Number(this.histories[k.symbol][1])
             < Number(this.histories[k.symbol][2]) && Number(this.histories[k.symbol][2])
             < Number(this.histories[k.symbol][3]) && Number(this.histories[k.symbol][3])
-            < Number(this.histories[k.symbol][4]) && (k.prc > 0.5)
+            < Number(this.histories[k.symbol][4])
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         let nbMise = String(this.available / this.mise).split('.')[0]
@@ -259,4 +254,4 @@ async function main(myBot) {
     start(200000)
 }
 
-start()
+start(0)
