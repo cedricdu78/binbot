@@ -103,7 +103,7 @@ class Bot {
                 if (this.histories[value.symbol].length === 5)
                     this.histories[value.symbol].shift()
 
-                value.prc = Number(((this.histories[value.symbol][4] - this.histories[value.symbol][0]) / this.histories[value.symbol][0]) * 100)
+                value.prc = Number(((this.histories[value.symbol][4].price - this.histories[value.symbol][0].price) / this.histories[value.symbol][0].price) * 100)
                 this.histories[value.symbol].push({price: value.price, prc: value.prc})
             }
             else this.histories[value.symbol] = [{price: value.price, prc: 0}]
