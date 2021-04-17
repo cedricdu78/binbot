@@ -127,6 +127,10 @@ class Bot {
             this.histories[value.symbol] = val
         })
 
+        console.log(new Date().toLocaleTimeString())
+        this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, 20)
+            .forEach(k => console.log(k.symbol + " " + this.histories[k.symbol][3].prc))
+
         this.bookTickers = this.bookTickers.filter(k =>
             Number(this.histories[k.symbol][0].price) < Number(this.histories[k.symbol][1].price)
             && Number(this.histories[k.symbol][1].price) < Number(this.histories[k.symbol][2].price)
@@ -135,10 +139,6 @@ class Bot {
             && Number(this.histories[k.symbol][1].prc) < Number(this.histories[k.symbol][2].prc)
             && Number(this.histories[k.symbol][2].prc) < Number(this.histories[k.symbol][3].prc)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
-
-        console.log(new Date().toLocaleTimeString())
-        this.bookTickers.sort((a, b) => b.prc - a.prc)
-            .forEach(k => console.log([k.symbol, this.histories[k.symbol]]))
 
         let nbMise = String(this.available / this.mise).split('.')[0]
 
