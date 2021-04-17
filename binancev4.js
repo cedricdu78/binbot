@@ -25,7 +25,7 @@ class Bot {
     available = 0
     total = 0
 
-    gain = 0.4
+    gain = 0.3
 
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
@@ -258,7 +258,7 @@ async function main(myBot) {
 
     myBot.getCurrenciesFilteredByConditions()
 
-    // await myBot.getBuy()
+    await myBot.getBuy()
 
     myBot.getConsole()
 
