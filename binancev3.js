@@ -119,8 +119,9 @@ class Bot {
 
             let val = []
             this.histories[value.symbol].forEach(v => {
-                val.push({ price: v[4], prc: Number(((v[4] - this.histories[value.symbol][0][4])
-                        / this.histories[value.symbol][0][4]) * 100)})
+                value.prc = Number(((v[4] - this.histories[value.symbol][0][4])
+                    / this.histories[value.symbol][0][4]) * 100)
+                val.push({ price: v[4], prc: value.prc})
             })
 
             this.histories[value.symbol] = val
