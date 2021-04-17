@@ -121,7 +121,7 @@ class Bot {
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         this.bookTickers.sort((a, b) => b.prc - a.prc)
-            .forEach(k => console.log(this.histories[k.symbol]))
+            .forEach(k => console.log([k.symbol, this.histories[k.symbol]]))
 
         let nbMise = String(this.available / this.mise).split('.')[0]
 
