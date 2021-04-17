@@ -25,7 +25,7 @@ class Bot {
     available = 0
     total = 0
 
-    gain = 0.3
+    gain = 1
 
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
