@@ -25,7 +25,7 @@ class Bot {
     available = 0
     total = 0
 
-    gain = 0.3
+    gain = 1
 
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
@@ -127,22 +127,19 @@ class Bot {
             this.histories[value.symbol] = val
         })
 
-        this.bookTickers = this.bookTickers.filter(k => k.prc > 2 && k.prc < 5
-            && Number(this.histories[k.symbol][0].price) < Number(this.histories[k.symbol][1].price)
-            && Number(this.histories[k.symbol][1].price) < Number(this.histories[k.symbol][2].price)
-            && Number(this.histories[k.symbol][2].price) < Number(this.histories[k.symbol][3].price)
-            && Number(this.histories[k.symbol][0].prc) < Number(this.histories[k.symbol][1].prc)
-            && Number(this.histories[k.symbol][1].prc) < Number(this.histories[k.symbol][2].prc)
-            && Number(this.histories[k.symbol][2].prc) < Number(this.histories[k.symbol][3].prc)
+        this.bookTickers = this.bookTickers.filter(k => k.prc < -1
+            && Number(this.histories[k.symbol][0].price) > Number(this.histories[k.symbol][1].price)
+            && Number(this.histories[k.symbol][1].price) > Number(this.histories[k.symbol][2].price)
+            && Number(this.histories[k.symbol][2].price) > Number(this.histories[k.symbol][3].price)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
         console.log(new Date().toLocaleTimeString())
-        this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, 20)
-            .forEach(k => console.log(k.symbol + " " + this.histories[k.symbol][3].prc))
+        this.bookTickers.sort((a, b) => a.prc - b.prc)
+            .forEach(k => console.log(k.symbol, this.histories[k.symbol]))
 
         let nbMise = String(this.available / this.mise).split('.')[0]
 
-        this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc)
+        this.bookTickers = this.bookTickers.sort((a, b) => a.prc - b.prc)
             .slice(0, nbMise <= 29 ? nbMise : 29)
 
         this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
