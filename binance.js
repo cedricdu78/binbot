@@ -93,8 +93,7 @@ class Bot {
                 openValue,
                 nowValue,
                 order.time,
-                (nowValue / openValue * 100) - 100,
-                order.orderId
+                (nowValue / openValue * 100) - 100
             ))
 
             this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
