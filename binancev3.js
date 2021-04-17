@@ -243,7 +243,7 @@ async function main(myBot) {
 
     myBot.getConsole()
 
-    start(720000)
+    start(300000)
 }
 
 start()
