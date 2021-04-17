@@ -25,7 +25,7 @@ class Bot {
     available = 0
     total = 0
 
-    gain = 1
+    gain = 0.3
 
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
@@ -97,49 +97,38 @@ class Bot {
         this.bookTickers = this.bookTickers.filter(k => this.exchangeInfo.find(v => v.symbol === k.symbol) !== undefined)
     }
 
-    async getHistories() {
-        await new Promise((resolve,) => {
-            let counter = 0
-            this.exchangeInfo.forEach(function(v) {
-                let startDate = new Date()
-                startDate.setHours(startDate.getHours() - 1)
-
-                this.api.candlesticks(v.symbol, '15m', false, {
-                    startTime: startDate.getTime(), endTime: new Date().getTime(), limit: 500
-                }).then(res => {
-                    this.histories[v.symbol] = res
-                    if (++counter === this.exchangeInfo.length) resolve();
-                }).catch(e => console.log(e))
-            }, this)
-        })
-    }
-
     getCurrenciesFilteredByConditions() {
-        this.bookTickers.forEach(value => {
 
-            let val = []
-            this.histories[value.symbol].forEach(v => {
-                value.prc = Number(((v[4] - this.histories[value.symbol][0][4])
-                    / this.histories[value.symbol][0][4]) * 100)
-                val.push({ price: v[4], prc: value.prc})
-            })
+        for(let i = 0; i < this.bookTickers.length; i++)
+        {
+            if (this.histories[this.bookTickers[i].symbol] !== undefined) {
+                if (this.histories[this.bookTickers[i].symbol].length === 5)
+                    this.histories[this.bookTickers[i].symbol].shift()
 
-            this.histories[value.symbol] = val
-        })
+                this.bookTickers[i].prc = Number(((this.bookTickers[i].price - this.histories[this.bookTickers[i].symbol][this.histories[this.bookTickers[i].symbol].length - 1].price)
+                    / this.histories[this.bookTickers[i].symbol][this.histories[this.bookTickers[i].symbol].length - 1].price) * 100)
 
-        this.bookTickers = this.bookTickers.filter(k => k.prc < -1
+                this.histories[this.bookTickers[i].symbol].push({price: this.bookTickers[i].price, prc: this.bookTickers[i].prc})
+            }
+            else this.histories[this.bookTickers[i].symbol] = [{price: this.bookTickers[i].price, prc: 0}]
+        }
+
+        this.bookTickers = this.bookTickers.filter(k => this.histories[k.symbol].length === 5
             && Number(this.histories[k.symbol][0].price) > Number(this.histories[k.symbol][1].price)
             && Number(this.histories[k.symbol][1].price) > Number(this.histories[k.symbol][2].price)
             && Number(this.histories[k.symbol][2].price) > Number(this.histories[k.symbol][3].price)
+            && Number(this.histories[k.symbol][3].price) > Number(this.histories[k.symbol][4].price)
+            && Number(this.histories[k.symbol][1].prc) < Number(this.histories[k.symbol][2].prc)
+            && Number(this.histories[k.symbol][2].prc) < Number(this.histories[k.symbol][3].prc)
+            && Number(this.histories[k.symbol][3].prc) < Number(this.histories[k.symbol][4].prc)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
-        console.log(new Date().toLocaleTimeString())
-        this.bookTickers.sort((a, b) => a.prc - b.prc)
-            .forEach(k => console.log(k.symbol, this.histories[k.symbol]))
+        this.bookTickers.sort((a, b) => b.prc - a.prc)
+            .forEach(k => console.log([k.symbol, this.histories[k.symbol]]))
 
         let nbMise = String(this.available / this.mise).split('.')[0]
 
-        this.bookTickers = this.bookTickers.sort((a, b) => a.prc - b.prc)
+        this.bookTickers = this.bookTickers.sort((a, b) => b.prc - a.prc)
             .slice(0, nbMise <= 29 ? nbMise : 29)
 
         this.currencies = this.exchangeInfo.filter(k => this.bookTickers.find(v => v.symbol === k.symbol) !== undefined)
@@ -251,16 +240,13 @@ async function main(myBot) {
 
     myBot.getOrders()
     myBot.getCurrenciesFilteredByBaseMoney()
-
-    await myBot.getHistories()
-
     myBot.getCurrenciesFilteredByConditions()
 
     await myBot.getBuy()
 
     myBot.getConsole()
 
-    start(15000)
+    start(720000)
 }
 
-start()
+start(0)
