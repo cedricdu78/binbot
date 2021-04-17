@@ -44,7 +44,6 @@ class Bot {
     }
 
     async getBookTickers() {
-        this.orders = []
         this.bookTickers = []
         await this.api.bookTickers().then(bookTickers => Object.entries(bookTickers).forEach(([k,v]) => {
             this.bookTickers.push({symbol: k, price: Number(v.ask)})
@@ -69,6 +68,7 @@ class Bot {
     }
 
     getOrders() {
+        this.orders = []
         this.openOrders.forEach(order => {
             let openValue = (order.price / (this.gain / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
@@ -120,7 +120,7 @@ class Bot {
             && Number(this.histories[k.symbol][3].prc) < Number(this.histories[k.symbol][4].prc)
             && this.balances.find(v => v.symbol + config.baseMoney() === k.symbol).onOrder === 0)
 
-        this.bookTickers.sort((a, b) => b.prc - a.prc)
+        this.bookTickers.sort((a, b) => b.prc - a.prc).splice(0,1)
             .forEach(k => console.log([k.symbol, this.histories[k.symbol]]))
 
         let nbMise = String(this.available / this.mise).split('.')[0]
