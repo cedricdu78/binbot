@@ -26,6 +26,8 @@ class Bot {
     bnb = 0
     total = 0
 
+    gain = 0.4
+
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
             this.exchangeInfo.push({
@@ -70,7 +72,7 @@ class Bot {
 
     getOrders() {
         this.openOrders.forEach(order => {
-            let openValue = (order.price / (1 / 100 + 1) * order.volume).toFixed(2)
+            let openValue = (order.price / (this.gain / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price).toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
 
@@ -150,7 +152,7 @@ class Bot {
                     value.volume = value.volume.substr(0, value.volume.split('.')[0].length
                         + (value.lenVol ? 1 : 0) + value.lenVol)
 
-                    value.sellPrice = String(value.price * (1 / 100 + 1))
+                    value.sellPrice = String(value.price * (this.gain / 100 + 1))
                     value.sellPrice = value.sellPrice.substr(0, value.sellPrice.split('.')[0].length
                         + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
