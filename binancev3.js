@@ -23,10 +23,9 @@ class Bot {
     mise = 0
 
     available = 0
-    bnb = 0
     total = 0
 
-    gain = 0.4
+    gain = 0.3
 
     async getExchangeInfo() {
         await this.api.exchangeInfo().then(exchangeInfo => exchangeInfo['symbols'].forEach(v => {
@@ -63,11 +62,10 @@ class Bot {
         }))
 
         this.available = this.balances.find(v => v.symbol === "USDT").available
-        this.bnb = this.balances.find(v => v.symbol === "BNB").price
 
         this.total += this.available
 
-        this.mise = (this.total - this.bnb) * 99 / 100
+        this.mise = this.total * 99 / 100
     }
 
     getOrders() {
@@ -160,7 +158,7 @@ class Bot {
                     value.price = value.price.substr(0, value.price.split('.')[0].length
                         + (value.lenPrice ? 1 : 0) + value.lenPrice)
 
-                    this.api.marketBuy(value.symbol, value.volume, (error,) => {
+                    this.api.marketBuy(value.symbol, value.volume, (error,data) => {
                         if (error !== null) {
                             let responseJson = JSON.parse(error.body)
                             console.error("Buy: " + value.symbol + " [" + responseJson.code + "]: "
@@ -170,8 +168,13 @@ class Bot {
                             if (this.currencies.indexOf(value) === this.currencies.length - 1)
                                 resolve()
                         } else {
-                            this.available -= Number(value.price) + (Number(value.price) * config.feeValue() / 100)
-                            this.bnb -= Number(value.price) * config.feeValue() / 100
+                            data.fills.forEach(v => value.volume = Number(value.volume) - Number(v.commission))
+
+                            value.volume = String(value.volume)
+                            value.volume = value.volume.substr(0, value.volume.split('.')[0].length
+                                + (value.lenVol ? 1 : 0) + value.lenVol)
+
+                            this.available -= Number(value.price)
 
                             this.api.sell(value.symbol, value.volume, value.sellPrice, {type: 'LIMIT'}, (error,) => {
                                 if (error !== null) {
@@ -208,7 +211,6 @@ class Bot {
 
         console.table({
             status: {
-                BNB: Number((this.bnb).toFixed(2)),
                 USD: Number(this.available.toFixed(2)),
                 Mise: Number(this.mise.toFixed(2)),
                 Total: Number(this.total.toFixed(2)),
