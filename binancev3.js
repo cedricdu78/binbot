@@ -131,8 +131,8 @@ class Bot {
         this.bookTickers.sort((a, b) => b.prc - a.prc).slice(0, 20)
             .forEach(k => console.log(k.symbol + " " + this.histories[k.symbol][3].prc))
 
-        this.bookTickers = this.bookTickers.filter(k =>
-            Number(this.histories[k.symbol][0].price) < Number(this.histories[k.symbol][1].price)
+        this.bookTickers = this.bookTickers.filter(k => k.prc > 2 && k.prc < 4
+            && Number(this.histories[k.symbol][0].price) < Number(this.histories[k.symbol][1].price)
             && Number(this.histories[k.symbol][1].price) < Number(this.histories[k.symbol][2].price)
             && Number(this.histories[k.symbol][2].price) < Number(this.histories[k.symbol][3].price)
             && Number(this.histories[k.symbol][0].prc) < Number(this.histories[k.symbol][1].prc)
