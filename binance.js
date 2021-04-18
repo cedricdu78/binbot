@@ -170,8 +170,6 @@ class Bot {
             && this.histories[v.symbol][this.histories[v.symbol].length - 1].close
             > this.histories[v.symbol][this.histories[v.symbol].length - 4].close)
 
-        console.log(this.exchangeInfo.length)
-
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
         this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
@@ -301,33 +299,25 @@ async function main() {
     /* Get mises and nb mise */
     myBot.getMise()
     /* Get cryptos on Balances without orders */
-    console.log(myBot.exchangeInfo.length)
     myBot.getPricesUnordered()
     /* Get orders in list */
-    console.log(myBot.exchangeInfo.length)
     myBot.getOrders()
     /* Remove currencies without baseMoney */
     myBot.getCurrenciesFilteredByBaseMoney()
-    console.log(myBot.exchangeInfo.length)
     /* Remove currencies ordered */
     myBot.getCurrenciesFilteredByOrders()
-    console.log(myBot.exchangeInfo.length)
     /* Remove currencies unordered */
     myBot.getCurrenciesFilteredByUnordered()
-    console.log(myBot.exchangeInfo.length)
 
     /* Get histories of currencies */
     await myBot.getHistories()
 
     /* Remove currencies when no have full histories */
     myBot.getCurrenciesFilteredByHistories()
-    console.log(myBot.exchangeInfo.length)
     /* Get average and price for currencies */
     myBot.getAveragesAndPrice()
-    console.log(myBot.exchangeInfo.length)
     /* Remove currencies not have full conditions */
     myBot.getCurrenciesFilteredByConditions()
-    console.log(myBot.exchangeInfo.length)
     /* Get precisions for prices and volumes */
     myBot.getPrecisions()
 
