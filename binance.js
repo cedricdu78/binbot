@@ -168,7 +168,9 @@ class Bot {
             && v.avg * (100 - config.median()[0]) / 100 >= v.price && v.price > 0
             && ((((Math.max.apply(null, v.lAvg)) - v.avg) / v.avg) * 100) >= config.prc()
             && this.histories[v.symbol][this.histories[v.symbol].length - 1].close
-            > this.histories[v.symbol][this.histories[v.symbol].length - 2].close)
+            > this.histories[v.symbol][this.histories[v.symbol].length - 4].close)
+
+        console.log(this.exchangeInfo.length)
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
@@ -299,32 +301,40 @@ async function main() {
     /* Get mises and nb mise */
     myBot.getMise()
     /* Get cryptos on Balances without orders */
+    console.log(myBot.exchangeInfo.length)
     myBot.getPricesUnordered()
     /* Get orders in list */
+    console.log(myBot.exchangeInfo.length)
     myBot.getOrders()
     /* Remove currencies without baseMoney */
     myBot.getCurrenciesFilteredByBaseMoney()
+    console.log(myBot.exchangeInfo.length)
     /* Remove currencies ordered */
     myBot.getCurrenciesFilteredByOrders()
+    console.log(myBot.exchangeInfo.length)
     /* Remove currencies unordered */
     myBot.getCurrenciesFilteredByUnordered()
+    console.log(myBot.exchangeInfo.length)
 
     /* Get histories of currencies */
     await myBot.getHistories()
 
     /* Remove currencies when no have full histories */
     myBot.getCurrenciesFilteredByHistories()
+    console.log(myBot.exchangeInfo.length)
     /* Get average and price for currencies */
     myBot.getAveragesAndPrice()
+    console.log(myBot.exchangeInfo.length)
     /* Remove currencies not have full conditions */
     myBot.getCurrenciesFilteredByConditions()
+    console.log(myBot.exchangeInfo.length)
     /* Get precisions for prices and volumes */
     myBot.getPrecisions()
 
     /* Buy currencies */
-    await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+    // await myBot.getBuy()
+    // /* Sell currencies */
+    // await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
@@ -334,4 +344,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
