@@ -138,6 +138,9 @@ class Bot {
                 }).then(res => {
                     this.histories[v.symbol] = res
                     if (++counter === this.exchangeInfo.length) resolve();
+                }).catch(e => {
+                    console.error(e)
+                    if (++counter === this.exchangeInfo.length) resolve();
                 })
             }, this)
         })
@@ -320,9 +323,9 @@ async function main() {
     myBot.getPrecisions()
 
     /* Buy currencies */
-    await myBot.getBuy()
+    // await myBot.getBuy()
     /* Sell currencies */
-    await myBot.getSell()
+    // await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
@@ -332,4 +335,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
