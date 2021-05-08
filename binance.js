@@ -269,6 +269,7 @@ class Bot {
                 Placed: Number(this.resume.placed.toFixed(2)),
                 Current: Number(this.resume.current.toFixed(2)),
                 Target: Number(this.resume.target.toFixed(2)),
+                Base: Number((this.resume.bnb + this.resume.available + this.resume.placed).toFixed(2)),
                 Total: Number(this.resume.total.toFixed(2))
             }
         })
@@ -319,10 +320,10 @@ async function main() {
     /* Get precisions for prices and volumes */
     myBot.getPrecisions()
 
-    /* Buy currencies */
-    await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+    // /* Buy currencies */
+    // await myBot.getBuy()
+    // /* Sell currencies */
+    // await myBot.getSell()
 
     /* Get console output */
     myBot.getConsole()
@@ -332,4 +333,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
