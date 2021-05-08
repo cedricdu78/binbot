@@ -9,7 +9,7 @@ module.exports = {
     // median :     Purchase of a crypto if price between -0% and -20% of the average calculated over a week
     // prc :        Percentage difference between the average and the maximum over the week
     mise: function () { return 4 },
-    profit: function () { return 1 },
+    profit: function () { return 0.3 },
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },

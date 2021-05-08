@@ -166,9 +166,7 @@ class Bot {
     getCurrenciesFilteredByConditions() {
         this.exchangeInfo = this.exchangeInfo.filter(v => v.avg * (100 - config.median()[1]) / 100 <= v.price
             && v.avg * (100 - config.median()[0]) / 100 >= v.price && v.price > 0
-            && ((((Math.max.apply(null, v.lAvg)) - v.avg) / v.avg) * 100) >= config.prc()
-            && this.histories[v.symbol][this.histories[v.symbol].length - 1].close
-            > this.histories[v.symbol][this.histories[v.symbol].length - 4].close)
+            && ((((Math.max.apply(null, v.lAvg)) - v.avg) / v.avg) * 100) >= config.prc())
 
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
@@ -257,9 +255,9 @@ class Bot {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
         if (this.resume.details.length > 0) console.table(this.resume.details.slice(0, 9), ["symbol", "am_price"])
         if (this.newOrders.length > 0) console.table(this.newOrders)
-        if (this.balances.filter(v => v.available > 0
+        if (this.balances.filter(v => v.price > 1
             && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()).length > 0) console.table(this.balances.filter(v => v.available > 1
+            && v.symbol !== config.feeMoney()).length > 0) console.table(this.balances.filter(v => v.price > 1
             && v.symbol !== config.baseMoney()
             && v.symbol !== config.feeMoney()))
         console.table({
