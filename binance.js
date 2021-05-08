@@ -59,10 +59,12 @@ class Bot {
                 this[1].current += this[0].find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
                     * (v.available + v.onOrder)
         }, [this.bookTickers, this.resume])
+
+        this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
     }
 
     getMise() {
-        this.resume.mise = (this.resume.available + this.resume.bnb + this.resume.current) * config.mise() / 100
+        this.resume.mise = this.resume.total * config.mise() / 100
     }
 
     getPricesUnordered() {
@@ -264,9 +266,10 @@ class Bot {
                 Num: this.resume.details.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
-                Placed: Number((this.resume.bnb + this.resume.available + this.resume.placed).toFixed(2)),
-                Current: Number((this.resume.bnb + this.resume.available + this.resume.current).toFixed(2)),
-                Target: Number((this.resume.bnb + this.resume.available + this.resume.target).toFixed(2))
+                Placed: Number(this.resume.placed.toFixed(2)),
+                Current: Number(this.resume.current.toFixed(2)),
+                Target: Number(this.resume.target.toFixed(2)),
+                Total: Number(this.resume.total.toFixed(2))
             }
         })
     }
@@ -316,9 +319,9 @@ async function main() {
     /* Get precisions for prices and volumes */
     myBot.getPrecisions()
 
-    // /* Buy currencies */
+    /* Buy currencies */
     await myBot.getBuy()
-    // /* Sell currencies */
+    /* Sell currencies */
     await myBot.getSell()
 
     /* Get console output */
