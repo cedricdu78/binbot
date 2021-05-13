@@ -152,30 +152,25 @@ class Bot {
         this.exchangeInfo.forEach(k => {
             const v = this.histories[k.symbol][0]
             let val = (((v.open - v.close) / v.close) * 100)
-            if (val > 7) {
-                this.list.push({
-                    symbol: k.symbol,
-                    last: val.toFixed(2),
-                    open: v.open,
-                    close: v.close,
-                    date: new Date(v.openTime),
-                    dateClose: new Date(v.closeTime)
-                })
-                k.price = v.close
-            }
+            this.list.push({
+                symbol: k.symbol,
+                last: val.toFixed(2),
+                open: v.open,
+                close: v.close,
+                date: new Date(v.openTime),
+                dateClose: new Date(v.closeTime)
+            })
+            k.price = v.close
         })
     }
 
     getCurrenciesFilteredByConditions() {
-        this.list = this.list.sort((a, b) => b.last - a.last).splice(0, 10)
-        if (this.list.length > 0) console.table(this.list)
-
-        this.list = this.list.sort((a, b) => b.last - a.last).splice(0, 1)
-        this.exchangeInfo = this.exchangeInfo.filter(v => this.list.filter(k => k.symbol === v.symbol).length > 0)
+        this.list = this.list.sort((a, b) => b.last - a.last).splice(0, 5)
+        console.table(this.list)
 
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
-        this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
-            .slice(0, nbMise <= 1 ? nbMise : 1)
+        this.list = this.list.filter(v => v.last > 7).sort((a, b) => b.last - a.last).splice(0, nbMise <= 1 ? nbMise : 1)
+        this.exchangeInfo = this.exchangeInfo.filter(v => this.list.filter(k => k.symbol === v.symbol).length > 0)
     }
 
     getPrecisions() {
