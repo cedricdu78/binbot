@@ -19,6 +19,7 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
+    list = []
     resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
 
     async getBalances() {
@@ -131,7 +132,7 @@ class Bot {
             let counter = 0
             this.exchangeInfo.forEach(function(v) {
                 let startDate = new Date()
-                startDate.setDate(startDate.getDate() - 7)
+                startDate.setMinutes(startDate.getMinutes() - 15)
 
                 this.api.candles({ symbol: v.symbol, interval: config.interval()[0],
                     startTime: startDate.getTime(), endTime: new Date().getTime(), limit: config.interval()[1]
@@ -146,49 +147,29 @@ class Bot {
         })
     }
 
-    getCurrenciesFilteredByHistories() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.histories[k.symbol].length >= 600)
-    }
-
     getAveragesAndPrice() {
-
-        let list = []
+        this.list = []
         this.exchangeInfo.forEach(k => {
-            let moy = []
-            this.histories[k.symbol].forEach(v => {
-                let val = (((v.high - v.low) / v.low) * 100)
-                if (this.histories[k.symbol].indexOf(v) === this.histories[k.symbol].length - 1) {
-                    moy = Number(func.lAvg(moy))
-                    let green = v.close > v.open
-                    let moy_ = (((val - moy) / moy) * 100)
-                    if (val > moy && green && moy_ > 100 && moy > 1) {
-                        list.push({
-                            symbol: k.symbol,
-                            avg: moy_.toFixed(2),
-                            last: val.toFixed(2),
-                            moy: moy.toFixed(2),
-                            open: v.open,
-                            close: v.close,
-                            date: new Date(v.openTime),
-                            dateClose: new Date(v.closeTime)
-                        })
-                    }
-                } else {
-                    moy.push(val)
-                }
-            })
+            const v = this.histories[k.symbol][0]
+            let val = (((v.open - v.close) / v.close) * 100)
+            if (val > 5) {
+                this.list.push({
+                    symbol: k.symbol,
+                    last: val.toFixed(2),
+                    open: v.open,
+                    close: v.close,
+                    date: new Date(v.openTime),
+                    dateClose: new Date(v.closeTime)
+                })
+                k.price = v.close
+            }
         })
-
-        console.table(list.sort((a, b) => b.avg - a.avg).splice(0, 10))
     }
 
     getCurrenciesFilteredByConditions() {
-        this.exchangeInfo = this.exchangeInfo.filter(v => null)
-
+        this.list = this.list.sort((a, b) => b.last - a.last).splice(0, 1)
+        this.exchangeInfo = this.exchangeInfo.filter(v => this.list.filter(k => k.symbol === v.symbol).length > 0)
         this.resume.details = this.exchangeInfo
-        let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
-        this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
-            .slice(0, nbMise <= 29 ? nbMise : 29)
     }
 
     getPrecisions() {
@@ -270,7 +251,7 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
-        if (this.resume.details.length > 0) console.table(this.resume.details.slice(0, 9), ["symbol", "am_price"])
+        if (this.list.length > 0) console.table(this.list)
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.price > 1
             && v.symbol !== config.baseMoney()
@@ -327,22 +308,20 @@ async function main() {
     /* Get histories of currencies */
     await myBot.getHistories()
 
-    /* Remove currencies when no have full histories */
-    myBot.getCurrenciesFilteredByHistories()
     /* Get average and price for currencies */
     myBot.getAveragesAndPrice()
     /* Remove currencies not have full conditions */
-    // myBot.getCurrenciesFilteredByConditions()
+    myBot.getCurrenciesFilteredByConditions()
     /* Get precisions for prices and volumes */
-    // myBot.getPrecisions()
-    //
-    // /* Buy currencies */
-    // await myBot.getBuy()
+    myBot.getPrecisions()
+
+    /* Buy currencies */
+    await myBot.getBuy()
     // /* Sell currencies */
-    // await myBot.getSell()
-    //
-    // /* Get console output */
-    // myBot.getConsole()
+    await myBot.getSell()
+
+    /* Get console output */
+    myBot.getConsole()
 
     /* Restart bot */
     start(15000)
