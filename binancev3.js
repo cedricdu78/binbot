@@ -152,7 +152,7 @@ class Bot {
         this.exchangeInfo.forEach(k => {
             const v = this.histories[k.symbol][0]
             let val = (((v.open - v.close) / v.close) * 100)
-            if (val > 5) {
+            if (val > 7) {
                 this.list.push({
                     symbol: k.symbol,
                     last: val.toFixed(2),
@@ -167,10 +167,12 @@ class Bot {
     }
 
     getCurrenciesFilteredByConditions() {
+        this.list = this.list.sort((a, b) => b.last - a.last).splice(0, 10)
+        if (this.list.length > 0) console.table(this.list)
+
         this.list = this.list.sort((a, b) => b.last - a.last).splice(0, 1)
         this.exchangeInfo = this.exchangeInfo.filter(v => this.list.filter(k => k.symbol === v.symbol).length > 0)
 
-        this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
         this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
             .slice(0, nbMise <= 1 ? nbMise : 1)
@@ -255,7 +257,6 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
-        if (this.list.length > 0) console.table(this.list)
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.price > 1
             && v.symbol !== config.baseMoney()
@@ -265,7 +266,6 @@ class Bot {
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
-                Num: this.resume.details.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number(this.resume.placed.toFixed(2)),
