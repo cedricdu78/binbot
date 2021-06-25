@@ -61,6 +61,11 @@ class Bot {
         }, [this.bookTickers, this.resume])
 
         this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
+
+        if (this.resume.total < config.minimalAmount()) {
+            console.log("exit because you not have minimal amount.")
+            process.exit()
+        }
     }
 
     getMise() {
@@ -298,41 +303,41 @@ async function main() {
     /* Get total value and others */
     myBot.getTotal()
     /* Get mises and nb mise */
-    myBot.getMise()
-    /* Get cryptos on Balances without orders */
-    myBot.getPricesUnordered()
-    /* Get orders in list */
-    myBot.getOrders()
-    /* Remove currencies without baseMoney */
-    myBot.getCurrenciesFilteredByBaseMoney()
-    /* Remove currencies ordered */
-    myBot.getCurrenciesFilteredByOrders()
-    /* Remove currencies unordered */
-    myBot.getCurrenciesFilteredByUnordered()
+    // myBot.getMise()
+    // /* Get cryptos on Balances without orders */
+    // myBot.getPricesUnordered()
+    // /* Get orders in list */
+    // myBot.getOrders()
+    // /* Remove currencies without baseMoney */
+    // myBot.getCurrenciesFilteredByBaseMoney()
+    // /* Remove currencies ordered */
+    // myBot.getCurrenciesFilteredByOrders()
+    // /* Remove currencies unordered */
+    // myBot.getCurrenciesFilteredByUnordered()
 
-    /* Get histories of currencies */
-    await myBot.getHistories()
+    // /* Get histories of currencies */
+    // await myBot.getHistories()
 
-    /* Remove currencies when no have full histories */
-    myBot.getCurrenciesFilteredByHistories()
-    /* Get average and price for currencies */
-    myBot.getAveragesAndPrice()
-    /* Remove currencies not have full conditions */
-    myBot.getCurrenciesFilteredByConditions()
-    /* Get precisions for prices and volumes */
-    myBot.getPrecisions()
+    // /* Remove currencies when no have full histories */
+    // myBot.getCurrenciesFilteredByHistories()
+    // /* Get average and price for currencies */
+    // myBot.getAveragesAndPrice()
+    // /* Remove currencies not have full conditions */
+    // myBot.getCurrenciesFilteredByConditions()
+    // /* Get precisions for prices and volumes */
+    // myBot.getPrecisions()
 
-    /* Buy currencies */
-    await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+    // /* Buy currencies */
+    // await myBot.getBuy()
+    // /* Sell currencies */
+    // await myBot.getSell()
 
-    /* Get console output */
-    myBot.getConsole()
+    // /* Get console output */
+    // myBot.getConsole()
 
-    /* Restart bot */
-    start()
+    // /* Restart bot */
+    // start()
 }
 
 /* Start bot */
-start()
+start(0)
