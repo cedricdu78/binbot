@@ -11,7 +11,7 @@ module.exports = {
     // minimalAmount :  Minimal amount for buy with bot
     mise: function () { return 20 },
     profit: function () { return 10 },
-    loss: function () { return 20 },
+    loss: function () { return 10 },
     leverage: function () { return 5 },
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },

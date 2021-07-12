@@ -193,7 +193,7 @@ class Bot {
             v.sellPrice = v.sellPrice.substr(0, v.sellPrice.split('.')[0].length
                 + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
 
-            v.stopPrice = String(v.price / (config.loss() / config.leverage() / 100 + 1))
+            v.stopPrice = String(v.price / (config.loss() / 100 + 1))
             v.stopPrice = v.stopPrice.substr(0, v.stopPrice.split('.')[0].length
                 + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
 
