@@ -2,9 +2,11 @@
   "name": "binbot",
   "version": "1.0.0",
   "devDependencies": {
-    "binance-api-node": "^0.10.37"
+    "binance-api-node": "^0.10.37",
+    "node-rest-client": "^3.1.0"
   },
   "dependencies": {
+    "express": "^4.17.1",
     "node-binance-api": "^0.12.5"
   }
 }

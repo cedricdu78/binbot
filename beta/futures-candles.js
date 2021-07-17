@@ -1,6 +1,6 @@
-const binSecret = require('./config/secrets');
-const config = require('./config/config-futures');
-const func = require('./lib/func');
+const binSecret = require('../config/secrets');
+const config = require('../config/config-futures');
+const func = require('../lib/func');
 
 const Binance = require('binance-api-node').default
 
@@ -15,6 +15,7 @@ class Bot {
     openOrders = []
     exchangeInfo = []
     bookTickers = []
+    candleInfo = []
 
     histories = []
     orders = []
@@ -23,19 +24,6 @@ class Bot {
 
     async getBalances() {
         let account = await this.api.futuresAccountInfo()
-
-        // console.log("totalInitialMargin: " + account.totalInitialMargin)
-        // console.log("totalMaintMargin: " + account.totalMaintMargin)
-        // console.log("totalWalletBalance: " + account.totalWalletBalance)
-        // console.log("totalUnrealizedProfit: " + account.totalUnrealizedProfit)
-        // console.log("totalMarginBalance: " + account.totalMarginBalance)
-        // console.log("totalPositionInitialMargin: " + account.totalPositionInitialMargin)
-        // console.log("totalOpenOrderInitialMargin: " + account.totalOpenOrderInitialMargin)
-        // console.log("totalCrossWalletBalance: " + account.totalCrossWalletBalance)
-        // console.log("totalCrossUnPnl: " + account.totalCrossUnPnl)
-        // console.log("availableBalance: " + account.availableBalance)
-        // console.log("maxWithdrawAmount: " + account.maxWithdrawAmount)
-
         account['assets'].forEach(function(v) {
             this.push({
                 symbol: v.asset,
@@ -140,7 +128,33 @@ class Bot {
                     startTime: startDate.getTime(), endTime: new Date().getTime(), limit: config.interval()[1]
                 }).then(res => {
                     this.histories[v.symbol] = res
-                    if (++counter === this.exchangeInfo.length) resolve();
+
+                    let nbRange = 0
+                    let run = null
+                    let lastPrc = 0
+
+                    res.reverse().forEach(k => {
+                        if (res.indexOf(k) === 0 && k.open < k.close) {
+                            run = true
+                        } else if (run) {
+                            let prc = (( k.close - k.open ) / k.open ) * 100
+                            if (k.open > k.close && prc < lastPrc) {
+                                lastPrc = prc
+                                nbRange++
+                            } else run = false
+                        }
+                    })
+
+                    this.candleInfo.push({
+                        symbol: v.symbol,
+                        number: nbRange
+                    })
+
+                    if (++counter === this.exchangeInfo.length) {
+                        this.candleInfo = this.candleInfo.sort((a, b) => b.number - a.number).filter(v => v.number >= 3)
+                        console.table(this.candleInfo)
+                        resolve();
+                    }
                 }).catch(e => {
                     console.error(v.symbol + " " + e)
                     if (++counter === this.exchangeInfo.length) resolve();
@@ -150,7 +164,7 @@ class Bot {
     }
 
     getCurrenciesFilteredByHistories() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.histories[k.symbol].length >= 600)
+        this.exchangeInfo = this.exchangeInfo.filter(k => this.candleInfo.filter(z => z.symbol === k.symbol).length > 0)
     }
 
     getAveragesAndPrice() {
@@ -162,7 +176,7 @@ class Bot {
             })
             v.avg = func.lAvg(v.lAvg)
 
-            v.price = this.histories[v.symbol][this.histories[v.symbol].length - 1].close
+            v.price = this.bookTickers.filter(y => y.symbol === v.symbol)[0].price
 
             v.am_price = ((v.price - (v.avg * (100 - config.median()[0]) / 100))
                 / (v.avg * (100 - config.median()[0]) / 100)) * 100
@@ -193,9 +207,11 @@ class Bot {
             v.sellPrice = v.sellPrice.substr(0, v.sellPrice.split('.')[0].length
                 + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
 
-            v.stopPrice = String(v.price / (config.loss() / 100 + 1))
+            v.stopPrice = String(v.price / (config.loss() / config.leverage() / 100 + 1))
             v.stopPrice = v.stopPrice.substr(0, v.stopPrice.split('.')[0].length
                 + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
+
+            console.log(v.symbol + " " + v.price + " " + v.sellPrice + " " + v.stopPrice)
 
             v.price = String(v.price * Number(v.volume))
             v.price = v.price.substr(0, v.price.split('.')[0].length

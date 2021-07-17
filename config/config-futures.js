@@ -9,14 +9,14 @@ module.exports = {
     // median :         Purchase of a crypto if price between -0% and -20% of the average calculated over a week
     // prc :            Percentage difference between the average and the maximum over the week
     // minimalAmount :  Minimal amount for buy with bot
-    mise: function () { return 20 },
-    profit: function () { return 10 },
-    loss: function () { return 10 },
-    leverage: function () { return 5 },
-    interval: function () { return ['15m', 900] },
+    mise: function () { return 90 },
+    profit: function () { return 5 },
+    loss: function () { return 30 },
+    leverage: function () { return 10 },
+    interval: function () { return ['4h', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },
-    minimalAmount: function () { return 10 },
+    minimalAmount: function () { return 15 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
     // feeMoney     : Use BNB for payment fee trading because -25%

@@ -1,11 +1,15 @@
-const binSecret = require('./config/secrets');
-const config = require('./config/config-spot');
-const func = require('./lib/func');
+const binSecret = require('../config/secrets');
+const config = require('../config/config-futures');
+const func = require('../lib/func');
+
+const Binance = require('binance-api-node').default
 
 class Bot {
 
-    api = (require('binance-api-node').default)({apiKey: binSecret.key(), apiSecret: binSecret.secret()});
-    // api = new (require('./lib/client_api'));
+    api = Binance({
+        apiKey: binSecret.key(),
+        apiSecret: binSecret.secret()
+    });
 
     balances = []
     openOrders = []
@@ -15,24 +19,41 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
-    resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
+    resume = {total: 0, available: 0, current: 0, mise: 0, details: 0}
 
     async getBalances() {
-        (await this.api.accountInfo())['balances'].forEach(function(v) {
-            this.push({symbol: v.asset, available: Number(v.free), onOrder: Number(v.locked)})
+        let account = await this.api.futuresAccountInfo()
+        account['assets'].forEach(function(v) {
+            this.push({
+                symbol: v.asset,
+                available: Number(v.availableBalance),
+                onOrder: Number(v.walletBalance) - Number(v.availableBalance),
+                leverage: 0, isolated: false
+            })
+        }, this.balances)
+
+        account['positions'].forEach(function(v) {
+            this.push({
+                symbol: v.symbol,
+                available: 0,
+                onOrder: Number(v.positionAmt),
+                leverage: v.leverage, isolated: v.isolated
+            })
         }, this.balances)
     }
 
     async getOpenOrders() {
-        (await this.api.openOrders()).forEach(function(v) {
-            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v['origQty']), time: v.time})
+        (await this.api.futuresOpenOrders()).forEach(function(v) {
+            if (v.type === "TAKE_PROFIT_MARKET") {
+                this.push({symbol: v.symbol, volume: Number(v['origQty']), stopPrice: v.stopPrice, time: v.time})
+            }
         }, this.openOrders)
     }
 
     async getExchangeInfo() {
-        (await this.api.exchangeInfo())['symbols'].forEach(function(v) {
-            this.push({symbol: v.symbol, status: v.status, minPrice: v['filters'][0].minPrice,
-                minQty: v['filters'][2].minQty
+        (await this.api.futuresExchangeInfo())['symbols'].forEach(function(v) {
+            this.push({symbol: v.symbol, status: v.status, pricePrecision: v.pricePrecision,
+                quantityPrecision: v.quantityPrecision
             })
         }, this.exchangeInfo)
     }
@@ -45,18 +66,13 @@ class Bot {
 
     getTotal() {
         this.resume.available = this.balances.find(v => v.symbol === config.baseMoney()).available
-
-        this.resume.bnb = this.balances.find(v => v.symbol === config.feeMoney()).available
-            * this.bookTickers.find(v => v.symbol === config.feeMoney() + config.baseMoney()).price
-
         this.balances.forEach(function(v) {
-            if (this[0].find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
-                && v.symbol !== config.feeMoney())
-                this[1].current += this[0].find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
-                    * (v.available + v.onOrder)
+            if (this[0].find(v2 => v2.symbol === v.symbol) !== undefined)
+                this[1].current += this[0].find(v2 => v2.symbol === v.symbol).price
+                    * (v.available + v.onOrder) / v.leverage
         }, [this.bookTickers, this.resume])
 
-        this.resume.total = this.resume.available + this.resume.bnb + this.resume.current
+        this.resume.total = this.resume.available + this.resume.current
 
         if (this.resume.total < config.minimalAmount()) {
             console.log("exit because you not have minimal amount.")
@@ -68,24 +84,12 @@ class Bot {
         this.resume.mise = this.resume.total * config.mise() / 100
     }
 
-    getPricesUnordered() {
-        this.balances.filter(v => v.available > 0
-            && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()).forEach(function(v) {
-            if (this.find(v2 => v2.symbol === v.symbol + config.baseMoney()) !== undefined
-                && v.symbol !== config.feeMoney())
-                v.price = Number((this.find(v2 => v2.symbol === v.symbol + config.baseMoney()).price
-                    * (v.available + v.onOrder)).toFixed(2))
-            else v.price = NaN
-        }, this.bookTickers)
-    }
-
     getOrders() {
         this.openOrders.forEach(function(order) {
-            let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
+            let openValue = (order.stopPrice / (config.profit() / 100 + 1) * order.volume).toFixed(2)
             let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
                 .toFixed(2)
-            let wantValue = (order.price * order.volume).toFixed(2)
+            let wantValue = (order.stopPrice * order.volume).toFixed(2)
 
             this.orders.push(func.order(
                 order.symbol,
@@ -96,35 +100,20 @@ class Bot {
                 order.time,
                 (nowValue / openValue * 100) - 100
             ))
-
-            this.resume.placed += order.price / (config.profit() / 100 + 1) * order.volume
-            this.resume.target += order.price * order.volume
         }, this)
     }
 
     getCurrenciesFilteredByBaseMoney() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => k.symbol.endsWith(config.baseMoney())
-            && !k.symbol.endsWith('DOWN' + config.baseMoney())
-            && !k.symbol.endsWith('UP' + config.baseMoney())
-            && !k.symbol.endsWith('BULL' + config.baseMoney())
-            && !k.symbol.endsWith('BEAR' + config.baseMoney())
-            && k.status !== 'BREAK')
+        this.exchangeInfo = this.exchangeInfo.filter(k => k.symbol.endsWith(config.baseMoney()))
     }
 
     getCurrenciesFilteredByOrders() {
         this.exchangeInfo = this.exchangeInfo.filter(k =>
-            this.balances.find(v => v.onOrder > 0 && v.symbol + config.baseMoney() === k.symbol) === undefined
+            this.balances.find(v => v.onOrder > 0 && v.symbol === k.symbol) === undefined
         )
 
         this.exchangeInfo = this.exchangeInfo.filter(k => this.openOrders.find(v => v.symbol === k.symbol)
             === undefined)
-    }
-
-    getCurrenciesFilteredByUnordered() {
-        this.exchangeInfo = this.exchangeInfo.filter(k => this.balances.filter(v => v.available > 1
-            && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()).find(v =>
-            k.symbol === v.symbol + config.baseMoney()) === undefined)
     }
 
     async getHistories() {
@@ -134,13 +123,13 @@ class Bot {
                 let startDate = new Date()
                 startDate.setDate(startDate.getDate() - 7)
 
-                this.api.candles({ symbol: v.symbol, interval: config.interval()[0],
+                this.api.futuresCandles({ symbol: v.symbol, interval: config.interval()[0],
                     startTime: startDate.getTime(), endTime: new Date().getTime(), limit: config.interval()[1]
                 }).then(res => {
                     this.histories[v.symbol] = res
                     if (++counter === this.exchangeInfo.length) resolve();
                 }).catch(e => {
-                    console.error(e)
+                    console.error(v.symbol + " " + e)
                     if (++counter === this.exchangeInfo.length) resolve();
                 })
             }, this)
@@ -180,35 +169,62 @@ class Bot {
 
     getPrecisions() {
         this.exchangeInfo.forEach(v => {
-            v.lenPrice = v.minPrice.split('.')[0] === "0"
-                ? (v.minPrice.split('.')[1].split('1')[0] + '1').length : 0
+            v.leverage = this.balances.filter(k => k.symbol === v.symbol)[0].leverage
+            v.isolated = this.balances.filter(k => k.symbol === v.symbol)[0].isolated
 
-            v.lenVol = v.minQty.split('.')[0] === "0"
-                ? (v.minQty.split('.')[1].split('1')[0] + '1').length : 0
-
-            v.volume = String((this.resume.mise / v.price))
+            v.volume = String((this.resume.mise / v.price) * config.leverage())
             v.volume = v.volume.substr(0, v.volume.split('.')[0].length
-                + (v.lenVol ? 1 : 0) + v.lenVol)
+                + (v.quantityPrecision ? 1 : 0) + v.quantityPrecision)
 
-            v.sellPrice = String(v.price * (config.profit() / 100 + 1))
+            v.sellPrice = String(v.price * (config.profit() / config.leverage() / 100 + 1))
             v.sellPrice = v.sellPrice.substr(0, v.sellPrice.split('.')[0].length
-                + (v.lenPrice ? 1 : 0) + v.lenPrice)
+                + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
+
+            v.stopPrice = String(v.price / (config.loss() / 100 + 1))
+            v.stopPrice = v.stopPrice.substr(0, v.stopPrice.split('.')[0].length
+                + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
 
             v.price = String(v.price * Number(v.volume))
             v.price = v.price.substr(0, v.price.split('.')[0].length
-                + (v.lenPrice ? 1 : 0) + v.lenPrice)
+                + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
         })
+    }
+
+    async configuration() {
+        if (this.exchangeInfo.length > 0) {
+            await new Promise((resolve,) => {
+                this.exchangeInfo.forEach(v => {
+                    if (v.leverage !== config.leverage())
+                        this.api.futuresLeverage({
+                            symbol: v.symbol,
+                            leverage: config.leverage()
+                        }).then(() => {
+                            if (v.isolated)
+                                this.api.futuresMarginType({
+                                    symbol: v.symbol,
+                                    marginType: "CROSSED"
+                                }).then(() => {
+                                    if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
+                                        resolve()
+                                })
+                            else if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
+                                resolve()
+                        })
+                    else if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
+                        resolve()
+                })
+            })
+        }
     }
 
     async getBuy() {
         if (this.exchangeInfo.length > 0) {
             await new Promise((resolve,) => {
                 this.exchangeInfo.forEach(v => {
-                    this.api.order({symbol: v.symbol, side: 'BUY', quantity: v.volume, type: 'MARKET'
+                    this.api.futuresOrder({symbol: v.symbol, side: 'BUY', positionSide: 'LONG', quantity: v.volume,
+                        type: 'MARKET'
                     }).then(() => {
-                        this.resume.available -= Number(v.price) + (Number(v.price) * config.feeValue() / 100)
-                        this.resume.bnb -= Number(v.price) * config.feeValue() / 100
-
+                        this.resume.available -= (Number(v.price) + (Number(v.price) * config.feeValue() / 100)) / config.leverage()
                         if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
                     }).catch(e => {
@@ -221,12 +237,13 @@ class Bot {
         }
     }
 
-    async getSell() {
+    async setTakeProfit() {
         if (this.exchangeInfo.length > 0) {
             await new Promise((resolve,) => {
                 this.exchangeInfo.forEach(v => {
-                    this.api.order({ symbol: v.symbol, side: 'SELL', quantity: v.volume, price: v.sellPrice,
-                        type: 'LIMIT'
+
+                    this.api.futuresOrder({ symbol: v.symbol, side: 'SELL', positionSide: 'LONG', quantity: v.volume,
+                        type: 'TAKE_PROFIT_MARKET', stopPrice: v.sellPrice
                     }).then(() => {
                         this.newOrders.push(
                             func.order(v.symbol,
@@ -239,10 +256,26 @@ class Bot {
                             )
                         )
 
-                        this.resume.placed += Number(v.price)
                         this.resume.current += Number(v.price)
-                        this.resume.target += Number(v.sellPrice) * Number(v.volume)
+                        if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
+                            resolve()
+                    }).catch(e => {
+                        console.error(e)
+                        if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
+                            resolve()
+                    })
+                })
+            })
+        }
+    }
 
+    async setStopLoss() {
+        if (this.exchangeInfo.length > 0) {
+            await new Promise((resolve,) => {
+                this.exchangeInfo.forEach(v => {
+                    this.api.futuresOrder({ symbol: v.symbol, side: 'SELL', positionSide: 'LONG', quantity: v.volume,
+                        type: 'STOP_MARKET', stopPrice: v.stopPrice
+                    }).then(() => {
                         if (this.exchangeInfo.indexOf(v) === this.exchangeInfo.length - 1)
                             resolve()
                     }).catch(e => {
@@ -260,19 +293,14 @@ class Bot {
         if (this.resume.details.length > 0) console.table(this.resume.details.slice(0, 9), ["symbol", "am_price"])
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.price > 1
-            && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()).length > 0) console.table(this.balances.filter(v => v.price > 1
-            && v.symbol !== config.baseMoney()
-            && v.symbol !== config.feeMoney()))
+            && v.symbol !== config.baseMoney()).length > 0) console.table(this.balances.filter(v => v.price > 1
+            && v.symbol !== config.baseMoney()))
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
                 Num: this.resume.details.length,
-                BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
-                Placed: Number(this.resume.placed.toFixed(2)),
                 Current: Number(this.resume.current.toFixed(2)),
-                Target: Number(this.resume.target.toFixed(2)),
                 Total: Number(this.resume.total.toFixed(2))
             }
         })
@@ -300,16 +328,12 @@ async function main() {
     myBot.getTotal()
     /* Get mises and nb mise */
     myBot.getMise()
-    /* Get cryptos on Balances without orders */
-    myBot.getPricesUnordered()
     /* Get orders in list */
     myBot.getOrders()
     /* Remove currencies without baseMoney */
     myBot.getCurrenciesFilteredByBaseMoney()
-    /* Remove currencies ordered */
+    // /* Remove currencies ordered */
     myBot.getCurrenciesFilteredByOrders()
-    /* Remove currencies unordered */
-    myBot.getCurrenciesFilteredByUnordered()
 
     /* Get histories of currencies */
     await myBot.getHistories()
@@ -323,17 +347,21 @@ async function main() {
     /* Get precisions for prices and volumes */
     myBot.getPrecisions()
 
+    /* configuration currencies */
+    await myBot.configuration()
     /* Buy currencies */
     await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+    /* Take profit currencies */
+    await myBot.setTakeProfit()
+    /* Stop loss currencies */
+    await myBot.setStopLoss()
 
     /* Get console output */
     myBot.getConsole()
 
     /* Restart bot */
-    start()
+    // start()
 }
 
 /* Start bot */
-start()
+start(0)

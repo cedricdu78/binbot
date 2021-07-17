@@ -14,7 +14,7 @@ module.exports = {
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },
-    minimalAmount: function () { return 500 },
+    minimalAmount: function () { return 800 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
     // feeMoney     : Use BNB for payment fee trading because -25%

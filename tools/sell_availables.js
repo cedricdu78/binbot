@@ -1,5 +1,5 @@
-const binSecret = require('./config/secrets');
-const config = require('./config/config');
+const binSecret = require('../config/secrets');
+const config = require('../config/config-spot');
 
 const Binance = require('node-binance-api');
 
