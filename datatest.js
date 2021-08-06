@@ -13,7 +13,7 @@ fs.readdirSync('./lib/assets').forEach(v => {
 
 const datasourceKeys = Object.keys(datasource).map(i => Number(i)).sort()
 
-function simulator(available, config_mise, config_median, config_prc, config_profit, config_available) {
+function simulator(available, config_mise, config_median, config_prc, config_profit, config_available, depot) {
     let orders = {}
     let nbSell = 0
 
@@ -21,7 +21,7 @@ function simulator(available, config_mise, config_median, config_prc, config_pro
 
     datasourceKeys.forEach(time => {
         if (new Date(time).getDate() === 1 && new Date(time).getHours() === 0 && new Date(time).getMinutes() === 0)
-            available += 1000
+            available += depot
 
         let capital = 0
         let ordersKeys = Object.keys(orders)
@@ -81,4 +81,4 @@ function simulator(available, config_mise, config_median, config_prc, config_pro
         "            },")
 }
 
-simulator(1400, 10, [-35, 0], 10, 13, 70)
+simulator(2000, 10, [-35, 0], 10, 13, 70, 2000)
