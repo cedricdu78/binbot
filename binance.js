@@ -217,6 +217,8 @@ class Bot {
                     }).then(() => {
                         this.resume.available -= Number(v.price) + (Number(v.price) * config.feeValue() / 100)
                         this.resume.bnb -= Number(v.price) * config.feeValue() / 100
+                        this.resume.placed += Number(v.price)
+                        this.resume.current += Number(v.price)
 
                         if (++counter === this.exchangeInfo.length) resolve();
                     }).catch(e => {
@@ -241,8 +243,6 @@ class Bot {
                                 v.price, Date.now(), 0)
                         )
 
-                        this.resume.placed += Number(v.price)
-                        this.resume.current += Number(v.price)
                         this.resume.target += Number(v.sellPrice) * Number(v.volume)
 
                         if (++counter === this.exchangeInfo.length) resolve();
