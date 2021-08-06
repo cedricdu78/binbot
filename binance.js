@@ -15,7 +15,7 @@ class Bot {
     histories = []
     orders = []
     newOrders = []
-    resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, details: 0}
+    resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, length: 0}
 
     async getBalances() {
         (await this.api.accountInfo())['balances'].forEach(function(v) {
@@ -176,12 +176,13 @@ class Bot {
             && v.avg * (100 - config.median()[1]) / 100 <= v.price
             && ((((Math.max.apply(null, v.lAvg)) - v.avg) / v.avg) * 100) >= config.prc())
 
-        this.resume.details = this.exchangeInfo
+        this.resume.length = this.exchangeInfo.length
+
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
         this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
             .slice(0, nbMise <= 29 ? nbMise : 29)
 
-        if (this.exchangeInfo.length < config.minimalCurrency)
+        if (this.resume.length < config.minimalCurrency)
             this.exchangeInfo = []
     }
 
@@ -256,7 +257,6 @@ class Bot {
 
     getConsole() {
         if (this.orders.length > 0) console.table(this.orders.sort((a, b) => b.plusValue - a.plusValue))
-        if (this.resume.details.length > 0) console.table(this.resume.details.slice(0, 9), ["symbol", "am_price"])
         if (this.newOrders.length > 0) console.table(this.newOrders)
         if (this.balances.filter(v => v.price > 1
             && v.symbol !== config.baseMoney()
@@ -266,7 +266,7 @@ class Bot {
         console.table({
             status: {
                 Mise: Number(this.resume.mise.toFixed(2)),
-                Num: this.resume.details.length,
+                Num: this.resume.length,
                 BNB: Number((this.resume.bnb).toFixed(2)),
                 USD: Number(this.resume.available.toFixed(2)),
                 Placed: Number(this.resume.placed.toFixed(2)),
