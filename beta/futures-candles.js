@@ -21,6 +21,7 @@ class Bot {
     orders = []
     newOrders = []
     resume = {total: 0, available: 0, current: 0, mise: 0, details: 0}
+    used = {}
 
     async getBalances() {
         let account = await this.api.futuresAccountInfo()
@@ -45,10 +46,23 @@ class Bot {
 
     async getOpenOrders() {
         (await this.api.futuresOpenOrders()).forEach(function(v) {
+            if (this[1][v.symbol] === undefined)
+                this[1][v.symbol] = [1, v.orderId, v.symbol]
+            else this[1][v.symbol] = [2, v.orderId, v.symbol]
             if (v.type === "TAKE_PROFIT_MARKET") {
-                this.push({symbol: v.symbol, volume: Number(v['origQty']), stopPrice: v.stopPrice, time: v.time})
+                this[0].push({symbol: v.symbol, volume: Number(v['origQty']), stopPrice: v.stopPrice, time: v.time})
             }
-        }, this.openOrders)
+        }, [this.openOrders, this.used])
+    }
+
+    async cancelOrders() {
+        for(let i = 0; i < Object.keys(this.used).length; i++) {
+            if (Object.values(this.used)[i][0] !== 2)
+                await this.api.futuresCancelOrder({
+                    orderId: Object.values(this.used)[i][1],
+                    symbol: Object.values(this.used)[i][2]
+                })
+        }
     }
 
     async getExchangeInfo() {
@@ -184,10 +198,6 @@ class Bot {
     }
 
     getCurrenciesFilteredByConditions() {
-        this.exchangeInfo = this.exchangeInfo.filter(v => v.avg * (100 - config.median()[1]) / 100 <= v.price
-            && v.avg * (100 - config.median()[0]) / 100 >= v.price && v.price > 0
-            && ((((Math.max.apply(null, v.lAvg)) - v.avg) / v.avg) * 100) >= config.prc())
-
         this.resume.details = this.exchangeInfo
         let nbMise = String(this.resume.available / this.resume.mise).split('.')[0]
         this.exchangeInfo = this.exchangeInfo.sort((a, b) => a.am_price - b.am_price)
@@ -210,8 +220,6 @@ class Bot {
             v.stopPrice = String(v.price / (config.loss() / config.leverage() / 100 + 1))
             v.stopPrice = v.stopPrice.substr(0, v.stopPrice.split('.')[0].length
                 + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
-
-            console.log(v.symbol + " " + v.price + " " + v.sellPrice + " " + v.stopPrice)
 
             v.price = String(v.price * Number(v.volume))
             v.price = v.price.substr(0, v.price.split('.')[0].length
@@ -348,6 +356,8 @@ async function main() {
     await myBot.getBalances()
     /* Get orders exists */
     await myBot.getOpenOrders()
+    /* Cancel orders not used */
+    await myBot.cancelOrders()
     /* Get list of currencies */
     await myBot.getExchangeInfo()
     /* Get prices of currencies */
@@ -389,7 +399,7 @@ async function main() {
     myBot.getConsole()
 
     /* Restart bot */
-    // start()
+    start()
 }
 
 /* Start bot */
