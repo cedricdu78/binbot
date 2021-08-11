@@ -9,11 +9,11 @@ module.exports = {
     // median :         Purchase of a crypto if price between -0% and -20% of the average calculated over a week
     // prc :            Percentage difference between the average and the maximum over the week
     // minimalAmount :  Minimal amount for buy with bot
-    mise: function () { return 25 },
-    profit: function () { return 10 },
+    mise: function () { return 4 },
+    profit: function () { return 50 },
     loss: function () { return 90 },
     leverage: function () { return 25 },
-    interval: function () { return ['1h', 900] },
+    interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },
     minimalAmount: function () { return 1 },

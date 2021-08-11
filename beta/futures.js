@@ -350,11 +350,11 @@ async function main() {
     /* configuration currencies */
     await myBot.configuration()
     /* Buy currencies */
-    await myBot.getBuy()
-    /* Take profit currencies */
-    await myBot.setTakeProfit()
-    /* Stop loss currencies */
-    await myBot.setStopLoss()
+    // await myBot.getBuy()
+    // /* Take profit currencies */
+    // await myBot.setTakeProfit()
+    // /* Stop loss currencies */
+    // await myBot.setStopLoss()
 
     /* Get console output */
     myBot.getConsole()
