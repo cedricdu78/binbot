@@ -20,6 +20,7 @@ class Bot {
     orders = []
     newOrders = []
     resume = {total: 0, available: 0, current: 0, mise: 0, details: 0}
+    used = {}
 
     async getBalances() {
         let account = await this.api.futuresAccountInfo()
@@ -48,6 +49,16 @@ class Bot {
                 this.push({symbol: v.symbol, volume: Number(v['origQty']), stopPrice: v.stopPrice, time: v.time})
             }
         }, this.openOrders)
+    }
+
+    async cancelOrders() {
+        for(let i = 0; i < Object.keys(this.used).length; i++) {
+            if (Object.values(this.used)[i][0] !== 2)
+                await this.api.futuresCancelOrder({
+                    orderId: Object.values(this.used)[i][1],
+                    symbol: Object.values(this.used)[i][2]
+                })
+        }
     }
 
     async getExchangeInfo() {
@@ -319,6 +330,8 @@ async function main() {
     await myBot.getBalances()
     /* Get orders exists */
     await myBot.getOpenOrders()
+    /* Cancel orders not used */
+    await myBot.cancelOrders()
     /* Get list of currencies */
     await myBot.getExchangeInfo()
     /* Get prices of currencies */
@@ -350,18 +363,18 @@ async function main() {
     /* configuration currencies */
     await myBot.configuration()
     /* Buy currencies */
-    // await myBot.getBuy()
-    // /* Take profit currencies */
-    // await myBot.setTakeProfit()
-    // /* Stop loss currencies */
-    // await myBot.setStopLoss()
+    await myBot.getBuy()
+    /* Take profit currencies */
+    await myBot.setTakeProfit()
+    /* Stop loss currencies */
+    await myBot.setStopLoss()
 
     /* Get console output */
     myBot.getConsole()
 
     /* Restart bot */
-    // start()
+    start()
 }
 
 /* Start bot */
-start(0)
+start()
