@@ -1,5 +1,8 @@
 module.exports = {
 
+    // keep_balance :   How much we keep the money.
+    keep_balance: function () { return 0 },
+
     // mise :           The stake is 4% of your total balance (example for $4000 spot balance, stake of $160)
     // profit :         Percentage of expected gain per purchase on a crypto
     // interval :       Crypto history every 15 minutes over a week
@@ -11,7 +14,6 @@ module.exports = {
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },
-    minimalCurrency: function () { return 70 },
     minimalAmount: function () { return 150 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
