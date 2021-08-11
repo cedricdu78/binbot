@@ -10,9 +10,8 @@ module.exports = {
     // prc :            Percentage difference between the average and the maximum over the week
     // minimalAmount :  Minimal amount for buy with bot
     mise: function () { return 10 },
-    profit: function () { return 50 },
-    loss: function () { return 90 },
-    leverage: function () { return 25 },
+    profit: function () { return 10 },
+    leverage: function () { return 20 },
     interval: function () { return ['15m', 900] },
     median: function () { return [0, 30] },
     prc: function () { return 10 },

@@ -86,10 +86,11 @@ class Bot {
 
     getOrders() {
         this.openOrders.forEach(function(order) {
-            let openValue = (order.stopPrice / (config.profit() / 100 + 1) * order.volume).toFixed(2)
-            let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
-                .toFixed(2)
-            let wantValue = (order.stopPrice * order.volume).toFixed(2)
+            let openValue = order.stopPrice / (config.profit() / 100 + 1)
+
+            let nowValue = this.bookTickers.find(v2 => v2.symbol === order.symbol).price
+
+            let wantValue = order.stopPrice
 
             this.orders.push(func.order(
                 order.symbol,
@@ -98,7 +99,7 @@ class Bot {
                 openValue,
                 nowValue,
                 order.time,
-                (nowValue / openValue * 100) - 100
+                ((nowValue / openValue * 100) - 100) * config.leverage()
             ))
         }, this)
     }
@@ -176,12 +177,8 @@ class Bot {
             v.volume = v.volume.substr(0, v.volume.split('.')[0].length
                 + (v.quantityPrecision ? 1 : 0) + v.quantityPrecision)
 
-            v.sellPrice = String(v.price * (config.profit() / config.leverage() / 100 + 1))
+            v.sellPrice = String(v.price * (config.profit() / 100 + 1))
             v.sellPrice = v.sellPrice.substr(0, v.sellPrice.split('.')[0].length
-                + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
-
-            v.stopPrice = String(v.price / (config.loss() / 100 + 1))
-            v.stopPrice = v.stopPrice.substr(0, v.stopPrice.split('.')[0].length
                 + (v.pricePrecision ? 1 : 0) + v.pricePrecision)
 
             v.price = String(v.price * Number(v.volume))
@@ -343,4 +340,4 @@ async function main() {
 }
 
 /* Start bot */
-start()
+start(0)
