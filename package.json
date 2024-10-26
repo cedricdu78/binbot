@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "express": "^4.17.1",
+    "kucoin-api": "^1.0.12",
     "node-binance-api": "^0.12.5"
   }
 }
