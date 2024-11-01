@@ -9,19 +9,20 @@ module.exports = {
     // median :         Purchase of a crypto if price between -0% and -20% of the average calculated over a week
     // prc :            Percentage difference between the average and the maximum over the week
     // minimalAmount :  Minimal amount for buy with bot
-    mise: function () { return 10 },
-    profit: function () { return 10 },
+    mise: function () { return 4 },
+    profit: function () { return 15 },
+    stopLoss: function () { return 1 },
     interval: function () { return ['15m', 900] },
-    median: function () { return [0, 30] },
+    median: function () { return [-10, 40] },
     prc: function () { return 10 },
-    minimalAmount: function () { return 150 },
+    minimalAmount: function () { return 1 },
 
     // baseMoney    : base for crypto trading !choose stable coin!
     // feeMoney     : Use BNB for payment fee trading because -25%
     // feeValue     : Fee value with BNB is 0.750 but for security 0.15
     baseMoney: function () { return "USDT" },
     feeMoney: function () { return "KCS" },
-    feeValue: function() { return 0.08 },
+    feeValue: function() { return 0.999 },
 
     // restartTime : Delay before restart bot
     restartTime: function() { return 20000 }

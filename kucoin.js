@@ -4,12 +4,16 @@ const func = require('./lib/func');
 
 const { SpotClient } = require('kucoin-api');
 
+let nextBuy = new Date()
+
 class Bot {
 
     api = new SpotClient({ apiKey: secret.key(), apiSecret: secret.secret(), apiPassphrase: secret.passphrase() });
     apiBinance = (require('binance-api-node').default)();
 
     balances = []
+    balancesOrders = {}
+    openOrdersId = {}
     openOrders = []
     exchangeInfo = []
     exchangeInfoBinance = []
@@ -20,16 +24,27 @@ class Bot {
     newOrders = []
     resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, length: 0}
 
-    async getBalances() {
-        (await this.api.getBalances())['data'].forEach(function(v) {
-            this.push({symbol: v.currency, available: Number(v.available), onOrder: Number(v.holds)})
-        }, this.balances)
+    async getOpenOrders() {
+        (await this.api.getOCOOrders({ status: 'active' }))['data']['items'].forEach(function(v) {
+            if (v.status == 'NEW')
+                this.openOrdersId[v.symbol] = v.orderId
+        }, this);
+
+        for(var id in this.openOrdersId) {
+            let data = (await this.api.getOCOOrderDetails({ orderId: this.openOrdersId[id] }))['data']
+            let orderTime = data['orderTime']
+            data = data['orders'][0]
+            this.balancesOrders[id.replace('-USDT', '')] = data.size
+            this.openOrders.push({symbol: data.symbol, price: Number(data.price), volume: Number(data.size), time: orderTime})
+        }
     }
 
-    async getOpenOrders() {
-        (await this.api.getOrders({ status: 'active' }))['data']['items'].forEach(function(v) {
-            this.push({symbol: v.symbol, price: Number(v.price), volume: Number(v.size), time: v.createdAt})
-        }, this.openOrders);
+    async getBalances() {
+        (await this.api.getBalances())['data'].forEach(function(v) {
+            if (v.currency in this.balancesOrders)
+                v.holds = this.balancesOrders[v.currency]
+            this.balances.push({symbol: v.currency, available: Number(v.available) - Number(v.holds), onOrder: Number(v.holds)})
+        }, this)
     }
 
     async getExchangeInfo() {
@@ -72,7 +87,7 @@ class Bot {
     }
 
     getPricesUnordered() {
-        this.balances.filter(v => v.available > 0
+        this.balances.filter(v => (v.available > 0 || v.available < 0)
             && v.symbol !== config.baseMoney()
             && v.symbol !== config.feeMoney()).forEach(function(v) {
             if (this.find(v2 => v2.symbol === v.symbol + '-' + config.baseMoney()) !== undefined
@@ -161,7 +176,11 @@ class Bot {
             })
             v.avg = func.lAvg(v.lAvg)
 
-            v.price = this.histories[v.symbol][this.histories[v.symbol].length - 1].close
+            v.priceb = Number(this.histories[v.symbol][this.histories[v.symbol].length - 1].close)
+            v.price = this.bookTickers.find(v2 => v.symbol == v2.symbol).price
+
+            if ((((v.price - v.priceb) / v.priceb) * 100) > 1)
+                v.price = 0
 
             v.am_price = ((v.price - (v.avg * (100 - config.median()[0]) / 100))
                 / (v.avg * (100 - config.median()[0]) / 100)) * 100
@@ -197,6 +216,10 @@ class Bot {
             v.sellPrice = v.sellPrice.substr(0, v.sellPrice.split('.')[0].length
                 + (v.lenPrice ? 1 : 0) + v.lenPrice)
 
+            v.stopLoss = String(v.price * (1 - config.stopLoss() / 100))
+            v.stopLoss = v.stopLoss.substr(0, v.stopLoss.split('.')[0].length
+                + (v.lenPrice ? 1 : 0) + v.lenPrice)
+
             v.price = String(v.price * Number(v.volume))
             v.price = v.price.substr(0, v.price.split('.')[0].length
                 + (v.lenPrice ? 1 : 0) + v.lenPrice)
@@ -210,8 +233,8 @@ class Bot {
                 this.exchangeInfo.forEach(v => {
                     this.api.submitOrder({clientOid: this.api.generateNewOrderID(), side: 'buy', symbol: v.symbol, type: 'market', size: v.volume
                     }).then(() => {
-                        this.resume.available -= Number(v.price) + (Number(v.price) * config.feeValue() / 100)
-                        this.resume.bnb -= Number(v.price) * config.feeValue() / 100
+                        this.resume.available -= Number(v.price) * config.feeValue()
+                        this.resume.bnb -= Number(v.price) * config.feeValue()
                         this.resume.placed += Number(v.price)
                         this.resume.current += Number(v.price)
 
@@ -230,7 +253,7 @@ class Bot {
             await new Promise((resolve,) => {
                 let counter = 0
                 this.exchangeInfo.forEach(v => {
-                    this.api.submitOrder({clientOid: this.api.generateNewOrderID(), side: 'sell', symbol: v.symbol, type: 'limit', size: v.volume, price: v.sellPrice
+                    this.api.submitOCOOrder({clientOid: this.api.generateNewOrderID(), side: 'sell', symbol: v.symbol, type: 'market', size: v.volume, price: v.sellPrice, stopPrice: v.stopLoss, limitPrice: v.stopLoss
                     }).then(() => {
                         this.newOrders.push(
                             func.order(v.symbol, v.volume, Number(v.sellPrice) * Number(v.volume), v.price,
@@ -266,7 +289,8 @@ class Bot {
                 Placed: Number(this.resume.placed.toFixed(2)),
                 Current: Number(this.resume.current.toFixed(2)),
                 Target: Number(this.resume.target.toFixed(2)),
-                Total: Number(this.resume.total.toFixed(2))
+                Total: Number(this.resume.total.toFixed(2)),
+                NextBuy: nextBuy
             }
         })
     }
@@ -280,10 +304,10 @@ async function main() {
 
     const myBot = new Bot()
 
-    /* Get Balances */
-    await myBot.getBalances()
     /* Get orders exists */
     await myBot.getOpenOrders()
+    /* Get Balances */
+    await myBot.getBalances()
     /* Get list of currencies */
     await myBot.getExchangeInfo()
     /* Get prices of currencies */
@@ -295,31 +319,38 @@ async function main() {
     myBot.getPricesUnordered()
     /* Get orders in list */
     myBot.getOrders()
-    /* Remove currencies without baseMoney */
-    myBot.getCurrenciesFilteredByBaseMoney()
-    /* Remove currencies not in Binance */
-    myBot.getCurrenciesFilteredByBinance()
-    /* Remove currencies ordered */
-    myBot.getCurrenciesFilteredByOrders()
-    /* Remove currencies unordered */
-    myBot.getCurrenciesFilteredByUnordered()
 
-    /* Get histories of currencies */
-    await myBot.getHistories()
+    if (new Date().getTime() > nextBuy.getTime()) {
 
-    /* Remove currencies when no have full histories */
-    myBot.getCurrenciesFilteredByHistories()
-    /* Get average and price for currencies */
-    myBot.getAveragesAndPrice()
-    /* Remove currencies not have full conditions */
-    myBot.getCurrenciesFilteredByConditions()
-    /* Get precisions for prices and volumes */
-    myBot.getPrecisions()
+        /* Remove currencies without baseMoney */
+        myBot.getCurrenciesFilteredByBaseMoney()
+        /* Remove currencies not in Binance */
+        myBot.getCurrenciesFilteredByBinance()
+        /* Remove currencies ordered */
+        myBot.getCurrenciesFilteredByOrders()
+        /* Remove currencies unordered */
+        myBot.getCurrenciesFilteredByUnordered()
 
-    /* Buy currencies */
-    await myBot.getBuy()
-    /* Sell currencies */
-    await myBot.getSell()
+        /* Get histories of currencies */
+        await myBot.getHistories()
+
+        /* Remove currencies when no have full histories */
+        myBot.getCurrenciesFilteredByHistories()
+        /* Get average and price for currencies */
+        myBot.getAveragesAndPrice()
+        /* Remove currencies not have full conditions */
+        myBot.getCurrenciesFilteredByConditions()
+        /* Get precisions for prices and volumes */
+        myBot.getPrecisions()
+
+        /* Buy currencies */
+        await myBot.getBuy()
+        /* Sell currencies */
+        await myBot.getSell()
+
+        nextBuy = new Date()
+        nextBuy.setMinutes(nextBuy.getMinutes() + 15)
+    }
 
     /* Get console output */
     myBot.getConsole()
