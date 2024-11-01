@@ -101,13 +101,15 @@ class Bot {
     getOrders() {
         this.openOrders.forEach(function(order) {
             let openValue = (order.price / (config.profit() / 100 + 1) * order.volume).toFixed(2)
-            let nowValue = (order.volume * this.bookTickers.find(v2 => v2.symbol === order.symbol).price)
+            let price = this.bookTickers.find(v2 => v2.symbol === order.symbol).price
+            let nowValue = (order.volume * price)
                 .toFixed(2)
             let wantValue = (order.price * order.volume).toFixed(2)
 
             this.orders.push(func.order(
                 order.symbol,
                 order.volume,
+                price,
                 wantValue,
                 openValue,
                 nowValue,
