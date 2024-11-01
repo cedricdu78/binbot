@@ -12,6 +12,7 @@ module.exports = {
     mise: function () { return 4 },
     profit: function () { return 15 },
     stopLoss: function () { return 1 },
+    stopLimit: function () { return 2 },
     interval: function () { return ['15m', 900] },
     median: function () { return [-10, 40] },
     prc: function () { return 10 },
@@ -22,7 +23,7 @@ module.exports = {
     // feeValue     : Fee value with BNB is 0.750 but for security 0.15
     baseMoney: function () { return "USDT" },
     feeMoney: function () { return "KCS" },
-    feeValue: function() { return 0.999 },
+    feeValue: function() { return 0.08 },
 
     // restartTime : Delay before restart bot
     restartTime: function() { return 20000 }

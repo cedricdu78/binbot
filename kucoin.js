@@ -25,6 +25,12 @@ class Bot {
     resume = {total: 0, available: 0, placed: 0, current: 0, target: 0, bnb: 0, mise: 0, length: 0}
 
     async getOpenOrders() {
+        (await this.api.getOrders({ status: 'active' }))['data']['items'].forEach(function(v) {
+            console.log({symbol: v.symbol, price: Number(v.price), volume: Number(v.size)})
+        });
+    }
+
+    async getOCOOrders() {
         (await this.api.getOCOOrders({ status: 'active' }))['data']['items'].forEach(function(v) {
             if (v.status == 'NEW')
                 this.openOrdersId[v.symbol] = v.orderId
@@ -222,8 +228,12 @@ class Bot {
             v.stopLoss = v.stopLoss.substr(0, v.stopLoss.split('.')[0].length
                 + (v.lenPrice ? 1 : 0) + v.lenPrice)
 
-            v.price = String(v.price * Number(v.volume))
-            v.price = v.price.substr(0, v.price.split('.')[0].length
+            v.stopLimit = String(v.price * (1 - config.stopLimit() / 100))
+            v.stopLimit = v.stopLimit.substr(0, v.stopLimit.split('.')[0].length
+                + (v.lenPrice ? 1 : 0) + v.lenPrice)
+
+            v.amount = String(v.price * Number(v.volume))
+            v.amount = v.amount.substr(0, v.amount.split('.')[0].length
                 + (v.lenPrice ? 1 : 0) + v.lenPrice)
         })
     }
@@ -235,10 +245,10 @@ class Bot {
                 this.exchangeInfo.forEach(v => {
                     this.api.submitOrder({clientOid: this.api.generateNewOrderID(), side: 'buy', symbol: v.symbol, type: 'market', size: v.volume
                     }).then(() => {
-                        this.resume.available -= Number(v.price) * config.feeValue()
-                        this.resume.bnb -= Number(v.price) * config.feeValue()
-                        this.resume.placed += Number(v.price)
-                        this.resume.current += Number(v.price)
+                        this.resume.available -= Number(v.amount) + (Number(v.amount) * config.feeValue() / 100)
+                        this.resume.bnb -= Number(v.amount) * config.feeValue() / 100
+                        this.resume.placed += Number(v.amount)
+                        this.resume.current += Number(v.amount)
 
                         if (++counter === this.exchangeInfo.length) resolve();
                     }).catch(e => {
@@ -255,11 +265,11 @@ class Bot {
             await new Promise((resolve,) => {
                 let counter = 0
                 this.exchangeInfo.forEach(v => {
-                    this.api.submitOCOOrder({clientOid: this.api.generateNewOrderID(), side: 'sell', symbol: v.symbol, type: 'market', size: v.volume, price: v.sellPrice, stopPrice: v.stopLoss, limitPrice: v.stopLoss
+                    this.api.submitOCOOrder({clientOid: this.api.generateNewOrderID(), side: 'sell', symbol: v.symbol, type: 'market', size: v.volume, price: v.sellPrice, stopPrice: v.stopLoss, limitPrice: v.stopLimit
                     }).then(() => {
                         this.newOrders.push(
-                            func.order(v.symbol, v.volume, Number(v.sellPrice) * Number(v.volume), v.price,
-                                v.price, Date.now(), 0)
+                            func.order(v.symbol, v.volume, v.price, Number(v.sellPrice) * Number(v.volume), v.amount,
+                                v.amount, Date.now(), 0)
                         )
 
                         this.resume.target += Number(v.sellPrice) * Number(v.volume)
@@ -308,6 +318,8 @@ async function main() {
 
     /* Get orders exists */
     await myBot.getOpenOrders()
+    /* Get orders exists */
+    await myBot.getOCOOrders()
     /* Get Balances */
     await myBot.getBalances()
     /* Get list of currencies */
