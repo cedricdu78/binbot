@@ -56,7 +56,7 @@ class Bot {
     async getExchangeInfo() {
         (await this.api.getSymbols())['data'].forEach(function(v) {
             this.push({symbol: v.symbol, status: v.enableTrading, minPrice: v.priceIncrement,
-                minQty: v.baseIncrement
+                minQty: v.baseIncrement, minSize: v.baseMinSize
             })
         }, this.exchangeInfo);
 
@@ -185,7 +185,10 @@ class Bot {
             v.avg = func.lAvg(v.lAvg)
 
             v.priceb = Number(this.histories[v.symbol][this.histories[v.symbol].length - 1].close)
-            v.price = this.bookTickers.find(v2 => v.symbol == v2.symbol).price
+            v.price = Number(this.bookTickers.find(v2 => v.symbol == v2.symbol).price)
+
+            if (Number(this.resume.mise / v.price) < Number(v.minSize))
+                v.price = 0
 
             if ((((v.price - v.priceb) / v.priceb) * 100) > 1)
                 v.price = 0
