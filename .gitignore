@@ -4,3 +4,4 @@ package-lock.json
 config/secrets.js
 node_modules
 lib/assets/data.json
+.DS_Store
