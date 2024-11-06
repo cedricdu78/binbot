@@ -3,5 +3,6 @@ kraken_api.iml
 package-lock.json
 config/secrets.js
 node_modules
-lib/assets/data.json
+lib/assets/
+lib/bitget/
 .DS_Store

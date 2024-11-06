@@ -31,7 +31,7 @@ class Bot {
     }
 
     async getOCOOrders() {
-        (await this.api.getOCOOrders({ status: 'active' }))['data']['items'].forEach(function(v) {
+        (await this.api.getOCOOrders({ status: 'active', pageSize: 100 }))['data']['items'].forEach(function(v) {
             if (v.status == 'NEW')
                 this.openOrdersId[v.symbol] = v.orderId
         }, this);
@@ -247,13 +247,28 @@ class Bot {
                 let counter = 0
                 this.exchangeInfo.forEach(v => {
                     this.api.submitOrder({clientOid: this.api.generateNewOrderID(), side: 'buy', symbol: v.symbol, type: 'market', size: v.volume
-                    }).then(() => {
-                        this.resume.available -= Number(v.amount) + (Number(v.amount) * config.feeValue() / 100)
-                        this.resume.bnb -= Number(v.amount) * config.feeValue() / 100
-                        this.resume.placed += Number(v.amount)
-                        this.resume.current += Number(v.amount)
+                    }).then((e) => {
 
-                        if (++counter === this.exchangeInfo.length) resolve();
+                        this.api.getOrderByOrderId({orderId: e.data.orderId}).then((e2) => {
+
+                            if (e2.data.dealSize != e2.data.size) {
+                                console.info(v.symbol)
+                                console.info(e2.data.size)
+                                console.info(e2.data.dealSize)
+                                v.volume = e2.data.dealSize
+                            }
+
+                            this.resume.available -= Number(v.amount) + Number(e2.data.fee)
+                            this.resume.bnb -= Number(e2.data.fee)
+                            this.resume.placed += Number(v.amount)
+                            this.resume.current += Number(v.amount)
+
+                            if (++counter === this.exchangeInfo.length) resolve();
+                        }).catch(e => {
+                            console.error(e)
+                            if (++counter === this.exchangeInfo.length) resolve();
+                        })
+
                     }).catch(e => {
                         console.error(e)
                         if (++counter === this.exchangeInfo.length) resolve();
