@@ -11,7 +11,7 @@ config = {
     'minimalAmount': 0,
     'median': [-10, 40],
     'prc': 10,
-    'profit': 15,
+    'profit': 7,
     'stopLoss': 1
 }
 
@@ -109,21 +109,25 @@ class binbot():
 
             resume['current'] += asset['USDT']
 
+        resume['total'] = resume['available'] + resume['availableFee'] + resume['current']
+        resume['mise'] = resume['total'] * config['mise'] / 100
+
         myOrders = []
-        for order in orders:
+        for idx, order in enumerate(orders):
             #order_info = self.request_api('/api/v2/spot/trade/orderInfo', { 'orderId': int(order['orderId']) })
             # resume['placed'] += 0
             # resume['target'] += 0
 
-            myOrders.append({ 
-                'symbol': order['symbol'], 
+            price = round(float(order['size']) * float([t for t in tickers if t['symbol'] == order['symbol']][0]['lastPr']), 2)
+
+            myOrders.append({
+                'n': idx + 1,
+                'symbol': order['symbol'],
                 'volume': float(order['size']),
-                'price': round(float(order['size']) * float([t for t in tickers if t['symbol'] == order['symbol']][0]['lastPr']), 2),
+                'price': price,
+                'indice': round(((price - resume['mise']) / resume['mise']) * 100, 2),
                 'date': datetime.datetime.fromtimestamp(int(order['cTime']) / 1000)
             })
-
-        resume['total'] = resume['available'] + resume['availableFee'] + resume['current']
-        resume['mise'] = resume['total'] * config['mise'] / 100
 
         if (resume['total'] < config['minimalAmount']):
             print("exit because you not have minimal amount.")
@@ -176,8 +180,10 @@ class binbot():
 
             currencies = sorted(currencies, key=lambda x: x['am_price'])
             currencies = currencies[:int(resume['available'] / resume['mise'])]
+            tickers = self.request_api('/api/v2/spot/market/tickers')
 
             for currency in currencies:
+                currency['price'] = float([t for t in tickers if t['symbol'] == currency['symbol']][0]['lastPr'])
                 sellPrice = round(currency['price'] * (config['profit'] / 100 + 1), int(currency['pricePrecision']))
                 stopLoss = round(currency['price'] * (1 - config['stopLoss'] / 100), int(currency['pricePrecision']))
                 volume = round(resume['mise'] / currency['price'], int(currency['quantityPrecision']))
@@ -196,7 +202,7 @@ class binbot():
                     'symbol': currency['symbol'], 
                     'volume': volume, 
                     'price': currency['price'], 
-                    'sellPrice': sellPrice * volume, 
+                    'sellPrice': sellPrice * volume,
                     'mise': resume['mise'],
                     'date': datetime.datetime.now()
                 })
@@ -210,7 +216,8 @@ class binbot():
             nextBuy = nextBuy + datetime.timedelta(minutes=15)
 
         print('\nList orders:')
-        self.pretty_table(sorted(myOrders, key=lambda d: d['price'], reverse=True))
+        if len(myOrders) > 0:
+            self.pretty_table(sorted(myOrders, key=lambda d: d['indice'], reverse=True))
 
         if len(newOrders) > 0:
             print('\nNew orders:')
